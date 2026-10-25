@@ -5,6 +5,7 @@ import {
   DollarSign, ShieldCheck, Factory, Building, ArrowLeft, FileText, X
 } from 'lucide-react';
 import { InstallPwaButton } from '../common/InstallPwaButton';
+import { useTheme } from '../../context/ThemeContext';
 
 export type ModuleTab = 
   | 'dashboard'
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen = false,
   onClose
 }) => {
+  const { currentTheme } = useTheme();
   const sections: {
     sectionTitle: string;
     modules: { id: ModuleTab; label: string; icon: any; roles: UserRole[]; badge?: string; badgeColor?: string }[];
@@ -126,13 +128,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Haut de la sidebar : Logo usine + bouton fermer mobile */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center font-black text-slate-950 text-lg shadow-lg shadow-amber-500/20 shrink-0">
-              <Factory className="w-6 h-6 text-slate-950" />
+            <div className={`w-10 h-10 rounded-xl ${currentTheme.logoBadgeClass} flex items-center justify-center font-black text-lg shadow-lg shrink-0 transition-colors`}>
+              <Factory className="w-6 h-6" />
             </div>
             <div>
               <div className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
                 BS ALVÉOLES
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-black">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-black">
                   ERP
                 </span>
               </div>
@@ -172,12 +174,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
                         isActive
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                          ? currentTheme.sidebarActiveClass
                           : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
+                        <Icon className="w-4 h-4" />
                         <span>{mod.label}</span>
                       </div>
                       {mod.badge && (

@@ -3,6 +3,8 @@ import { UserRole, SystemNotification, User as UserType } from '../../types';
 import { Wifi, WifiOff, LogOut, Globe, Factory, Menu } from 'lucide-react';
 import { NotificationCenter } from '../common/NotificationCenter';
 import { InstallPwaButton } from '../common/InstallPwaButton';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import { useTheme } from '../../context/ThemeContext';
 
 interface HeaderProps {
   currentUser: UserType | null;
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleMobileMenu
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const { currentTheme } = useTheme();
 
   return (
     <header className="h-14 sm:h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-[200] shadow-sm font-sans">
@@ -45,8 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        <div className="h-9 sm:h-10 px-2 sm:px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black flex items-center gap-1.5 shadow-sm shrink-0">
-          <Factory className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
+        <div className={`h-9 sm:h-10 px-2 sm:px-2.5 py-1 rounded-xl ${currentTheme.logoBadgeClass} font-black flex items-center gap-1.5 shadow-sm shrink-0 transition-colors`}>
+          <Factory className="w-4 h-4 sm:w-5 sm:h-5" />
           <span className="text-[11px] sm:text-xs font-black tracking-wider">BS ALVÉOLES</span>
         </div>
 
@@ -67,6 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Contrôles droits */}
       <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <ThemeSwitcher />
         <InstallPwaButton compact={true} />
 
         {onOpenPublicPortal && (

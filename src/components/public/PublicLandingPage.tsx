@@ -4,6 +4,8 @@ import {
   ChevronDown, Zap, Award, Users, Globe2, Phone, CheckCircle2,
   Layers, ArrowRight, Calculator, Leaf, Recycle, Scale
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
 
 interface PublicLandingPageProps {
   onOpenLogin: () => void;
@@ -108,13 +110,15 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
     }, 2500);
   };
 
+  const { currentTheme } = useTheme();
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
       {/* Barre supérieure d'information usine */}
       <div className="bg-slate-950 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+            <span className="flex items-center gap-1.5 font-semibold" style={{ color: currentTheme.hex }}>
               <Factory className="w-3.5 h-3.5" />
               Unité Industrielle de Fabrication d'Alvéoles en Pâte Moulée
             </span>
@@ -125,14 +129,17 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
-            <span className="flex items-center gap-1 text-slate-400">
-              <Phone className="w-3 h-3 text-amber-400" />
+          <div className="flex items-center gap-3 sm:gap-4 text-[11px]">
+            <ThemeSwitcher />
+            
+            <span className="hidden sm:flex items-center gap-1 text-slate-400">
+              <Phone className="w-3 h-3" style={{ color: currentTheme.hex }} />
               Service Commercial : +221 76 622 59 79
             </span>
             <button
               onClick={onOpenLogin}
-              className="text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1"
+              className="hover:underline font-bold flex items-center gap-1"
+              style={{ color: currentTheme.hex }}
             >
               <LogIn className="w-3 h-3" />
               Accès Équipe Usine
@@ -145,7 +152,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
       <header className="bg-white/95 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950">
+            <div className={`w-11 h-11 rounded-2xl ${currentTheme.logoBadgeClass} flex items-center justify-center shadow-lg transition-colors`}>
               <Factory className="w-6 h-6" />
             </div>
             <div>
@@ -160,10 +167,10 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <a href="#catalogue" className="hover:text-amber-600 transition-colors">Catalogue Alvéoles</a>
-            <a href="#simulateur" className="hover:text-amber-600 transition-colors">Simulateur & Tarifs</a>
-            <a href="#process" className="hover:text-amber-600 transition-colors">Process Écologique</a>
-            <a href="#contact" className="hover:text-amber-600 transition-colors">Contact Usine</a>
+            <a href="#catalogue" className="hover:text-slate-950 transition-colors">Catalogue Alvéoles</a>
+            <a href="#simulateur" className="hover:text-slate-950 transition-colors">Simulateur & Tarifs</a>
+            <a href="#process" className="hover:text-slate-950 transition-colors">Process Écologique</a>
+            <a href="#contact" className="hover:text-slate-950 transition-colors">Contact Usine</a>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -179,7 +186,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
             </button>
             <button
               onClick={onOpenLogin}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition-all active:scale-95"
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl ${currentTheme.buttonClass} font-black text-xs shadow-lg transition-all active:scale-95`}
             >
               <LogIn className="w-4 h-4" />
               Accéder à l'ERP Usine
@@ -192,14 +199,14 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
       <section className="relative pt-12 pb-20 overflow-hidden bg-gradient-to-b from-slate-100 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
           <div className="text-center max-w-3xl mx-auto space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-900 text-xs font-extrabold shadow-sm">
-              <Recycle className="w-4 h-4 text-amber-600 animate-spin-slow" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs font-extrabold shadow-sm">
+              <Recycle className="w-4 h-4 animate-spin-slow" style={{ color: currentTheme.hex }} />
               1er Fabricant Sénégalais d'Alvéoles en Pâte Moulée 100% Recyclée
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.15]">
               Alvéoles & Boîtes d'Œufs{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">
+              <span className={`text-transparent bg-clip-text bg-gradient-to-r ${currentTheme.gradient}`}>
                 Haute Résistance
               </span>
             </h1>
@@ -214,12 +221,12 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogi
                 href="#simulateur"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-950 hover:bg-slate-900 text-white font-extrabold text-sm shadow-xl transition-all active:scale-95"
               >
-                <Calculator className="w-4 h-4 text-amber-400" />
+                <Calculator className="w-4 h-4" style={{ color: currentTheme.hex }} />
                 Calculer un Devis en Direct
               </a>
               <button
                 onClick={onOpenLogin}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 transition-all active:scale-95"
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl ${currentTheme.buttonClass} font-black text-sm shadow-lg transition-all active:scale-95`}
               >
                 <Factory className="w-4 h-4" />
                 Ouvrir le Logiciel de Gestion Usine
