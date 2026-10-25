@@ -64,8 +64,8 @@ doc.setFont('helvetica', 'normal');
 doc.setFontSize(8);
 doc.setTextColor(...textDark);
 doc.text('Ingenierie Logicielle, Applications Web & Systemes de Gestion ERP/MES', 15, y + 9);
-doc.text('Dakar, Senegal - Tel / WhatsApp : +221 76 622 59 79', 15, y + 13.5);
-doc.text('Email : seck.ablaye@dev-senegal.com', 15, y + 18);
+doc.text('Dakar, Senegal - Tel / WhatsApp : +221 77 792 40 65 / +221 75 368 86 18', 15, y + 13.5);
+doc.text('Email : ablaye.seck@dev-senegal.com', 15, y + 18);
 
 // Bloc Client (Usine)
 doc.setFillColor(...bgLight);
@@ -223,32 +223,40 @@ y += 5;
 
 // Encadré Modalités à gauche
 doc.setFillColor(248, 250, 252);
-doc.roundedRect(15, y, 105, 34, 2, 2, 'F');
+doc.roundedRect(15, y, 105, 36, 2, 2, 'F');
 doc.setDrawColor(...borderLight);
-doc.roundedRect(15, y, 105, 34, 2, 2, 'D');
+doc.roundedRect(15, y, 105, 36, 2, 2, 'D');
 
 doc.setFont('helvetica', 'bold');
 doc.setFontSize(7.5);
 doc.setTextColor(...primaryNavy);
-doc.text('ECHEANCIER & MODALITES DE REGLEMENT :', 18, y + 6);
+doc.text('ECHEANCIER & CONDITIONS DE REGLEMENT :', 18, y + 5.5);
 
 doc.setFont('helvetica', 'normal');
-doc.setFontSize(7);
+doc.setFontSize(6.8);
 doc.setTextColor(...textDark);
-doc.text('- Acompte au demarrage du developpement (40%) : 260 000 FCFA', 18, y + 11.5);
-doc.text('- Paiement a la livraison de la version de test / validation (40%) : 260 000 FCFA', 18, y + 16.5);
-doc.text('- Solde final apres formation et mise en production (20%) : 130 000 FCFA', 18, y + 21.5);
-doc.text('- Reglement via Wave Business, Orange Money Pro, Virement Bancaire ou Cheque', 18, y + 26.5);
-doc.text('- Inclus : Code source livre, garantie corrective et assistance 3 mois', 18, y + 30.5);
+doc.text('- Acompte au demarrage du projet (40%) : 260 000 FCFA', 18, y + 10.5);
+doc.text('- Paiement a la livraison de la version test (40%) : 260 000 FCFA', 18, y + 15);
+doc.text('- Solde final apres formation et livraison (20%) : 130 000 FCFA', 18, y + 19.5);
+doc.text('- Reglement via Wave Business, Orange Money Pro, Virement Bancaire', 18, y + 24);
+
+// Mention explicite Hébergement Exclu
+doc.setFont('helvetica', 'bold');
+doc.setTextColor(185, 28, 28); // Rouge foncé
+doc.text('* HEBERGEMENT SERVEUR & DOMAINE : EXCLUS (A la charge du client)', 18, y + 28.5);
+
+doc.setFont('helvetica', 'normal');
+doc.setTextColor(...textDark);
+doc.text('- Inclus : Deploiement sur serveur client, code source et support 3 mois', 18, y + 33);
 
 // Encadré Total à droite
 const totauxX = 125;
 const totauxWidth = 70;
 
 doc.setFillColor(248, 250, 252);
-doc.roundedRect(totauxX, y, totauxWidth, 34, 2, 2, 'F');
+doc.roundedRect(totauxX, y, totauxWidth, 36, 2, 2, 'F');
 doc.setDrawColor(...borderLight);
-doc.roundedRect(totauxX, y, totauxWidth, 34, 2, 2, 'D');
+doc.roundedRect(totauxX, y, totauxWidth, 36, 2, 2, 'D');
 
 doc.setFont('helvetica', 'normal');
 doc.setFontSize(8);
@@ -256,22 +264,27 @@ doc.setTextColor(...textDark);
 doc.text('Sous-Total Prestations :', totauxX + 4, y + 6.5);
 doc.text('650 000 FCFA', totauxX + totauxWidth - 4, y + 6.5, { align: 'right' });
 
-doc.text('Hebergement & Base Locale :', totauxX + 4, y + 12);
-doc.text('OFFERT', totauxX + totauxWidth - 4, y + 12, { align: 'right' });
+// Ligne Hébergement Serveur Exclu
+doc.text('Hebergement Serveur :', totauxX + 4, y + 12);
+doc.setFont('helvetica', 'bold');
+doc.setTextColor(185, 28, 28);
+doc.text('EXCLU (Client)', totauxX + totauxWidth - 4, y + 12, { align: 'right' });
 
-doc.text('Assistance & Garantie (3 mois) :', totauxX + 4, y + 17.5);
+doc.setFont('helvetica', 'normal');
+doc.setTextColor(...textDark);
+doc.text('Garantie & Support (3 mois) :', totauxX + 4, y + 17.5);
 doc.text('INCLUS', totauxX + totauxWidth - 4, y + 17.5, { align: 'right' });
 
 // Ligne Total Net
 doc.setFillColor(...primaryNavy);
-doc.rect(totauxX, y + 22, totauxWidth, 12, 'F');
+doc.rect(totauxX, y + 23, totauxWidth, 13, 'F');
 
 doc.setTextColor(...accentAmber);
 doc.setFont('helvetica', 'bold');
 doc.setFontSize(8.5);
-doc.text('TOTAL DU DEVIS :', totauxX + 4, y + 29.5);
+doc.text('TOTAL DU DEVIS :', totauxX + 4, y + 31);
 doc.setFontSize(11);
-doc.text('650 000 FCFA', totauxX + totauxWidth - 4, y + 29.5, { align: 'right' });
+doc.text('650 000 FCFA', totauxX + totauxWidth - 4, y + 31, { align: 'right' });
 
 // 7. Signatures et Validation
 y = 233;
@@ -330,7 +343,7 @@ doc.text(
   { align: 'center' }
 );
 doc.text(
-  'Ablaye SECK - Developpeur Web & Mobile Full-Stack - Tel : +221 76 622 59 79 - Email : seck.ablaye@dev-senegal.com',
+  'Ablaye SECK - Developpeur Web & Mobile Full-Stack - Tel : +221 77 792 40 65 / +221 75 368 86 18',
   pageWidth / 2,
   footerY + 7,
   { align: 'center' }
