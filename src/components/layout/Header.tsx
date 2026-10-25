@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserRole, SystemNotification, User as UserType } from '../../types';
-import { Wifi, WifiOff, LogOut, Globe, Factory } from 'lucide-react';
+import { Wifi, WifiOff, LogOut, Globe, Factory, Menu } from 'lucide-react';
 import { NotificationCenter } from '../common/NotificationCenter';
 
 interface HeaderProps {
@@ -13,6 +13,7 @@ interface HeaderProps {
   notifications: SystemNotification[];
   onRefreshData: () => void;
   onOpenPublicPortal?: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,25 +25,37 @@ export const Header: React.FC<HeaderProps> = ({
   pendingSyncCount,
   notifications,
   onRefreshData,
-  onOpenPublicPortal
+  onOpenPublicPortal,
+  onToggleMobileMenu
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
-    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-[200] shadow-sm font-sans">
-      {/* Identité Usine */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black flex items-center gap-1.5 shadow-sm">
-          <Factory className="w-5 h-5 text-slate-950" />
-          <span className="text-xs font-black tracking-wider">BS ALVÉOLES</span>
+    <header className="h-14 sm:h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-[200] shadow-sm font-sans">
+      {/* Bouton Hamburger Mobile + Identité Usine */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            className="md:hidden p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-slate-200 active:scale-95 transition-all"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="w-5 h-5 text-slate-800" />
+          </button>
+        )}
+
+        <div className="h-9 sm:h-10 px-2 sm:px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black flex items-center gap-1.5 shadow-sm shrink-0">
+          <Factory className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
+          <span className="text-[11px] sm:text-xs font-black tracking-wider">BS ALVÉOLES</span>
         </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <h1 className="font-extrabold text-slate-900 text-sm md:text-base tracking-tight">
-              Unité Industrielle de Pâte Moulée
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 truncate">
+            <h1 className="font-extrabold text-slate-900 text-xs sm:text-sm md:text-base tracking-tight truncate">
+              Unité Pâte Moulée
             </h1>
-            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded-full">
-              Sénégal
+            <span className="text-[9px] sm:text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded-full shrink-0">
+              SN
             </span>
           </div>
           <p className="text-[10px] text-slate-500 font-medium hidden md:block">

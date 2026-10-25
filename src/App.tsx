@@ -15,6 +15,8 @@ import { StockAlveolesModule } from './modules/stock/StockAlveolesModule';
 import { GestionCommercialeModule } from './modules/commercial/GestionCommercialeModule';
 import { ComptabiliteFinanciereModule } from './modules/finances/ComptabiliteFinanciereModule';
 import { AuditLogModule } from './modules/audit/AuditLogModule';
+import { CahierDesChargesModule } from './modules/cahier_charges/CahierDesChargesModule';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 
 // Profils par défaut de l'équipe usine
 const ROLE_PROFILES: Record<UserRole, User> = {
@@ -33,6 +35,7 @@ export function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [viewPublicVitrine, setViewPublicVitrine] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Données Dexie réactives
   const notifications = useLiveQuery(() => db.notifications.toArray()) || [];
@@ -108,17 +111,20 @@ export function App() {
         notifications={notifications}
         onRefreshData={() => {}}
         onOpenPublicPortal={() => setViewPublicVitrine(true)}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-4rem)]">
+      <div className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
         <Sidebar
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           userRole={currentRole}
           onBackToVitrine={() => setViewPublicVitrine(true)}
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
         />
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto h-full max-w-7xl mx-auto w-full pb-16">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto h-full max-w-7xl mx-auto w-full pb-20 md:pb-16">
           {activeTab === 'dashboard' && (
             <ExecutiveDashboard onNavigateTab={setActiveTab} />
           )}
@@ -142,8 +148,23 @@ export function App() {
           {activeTab === 'audit_logs' && (
             <AuditLogModule auditLogs={auditLogs} />
           )}
+
+          {activeTab === 'cahier_charges' && (
+            <CahierDesChargesModule />
+          )}
         </main>
       </div>
+
+      {/* Barre de navigation mobile ancrée en bas */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
+        onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        isMenuOpen={isMobileMenuOpen}
+      />
     </div>
   );
 }
