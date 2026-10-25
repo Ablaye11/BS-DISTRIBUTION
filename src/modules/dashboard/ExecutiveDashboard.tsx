@@ -1,278 +1,345 @@
 import React from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/database';
 import { 
-  TrendingUp, DollarSign, AlertTriangle, Boxes, 
-  Users, Building2, Store, Award, PieChart, Activity 
+  Gauge, TrendingUp, DollarSign, Boxes, Factory, AlertTriangle, 
+  CheckCircle2, Clock, ShoppingBag, ShieldCheck, ArrowUpRight, 
+  Layers, Package, Zap, ArrowRight
 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart as RePieChart, Pie, Cell } from 'recharts';
-import { Invoice, StockLot, StockLoss, Expense, Prospect, Client, Poulailler } from '../../types';
+import { 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
+  CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line 
+} from 'recharts';
 
 interface ExecutiveDashboardProps {
-  invoices: Invoice[];
-  stockLots: StockLot[];
-  stockLosses: StockLoss[];
-  expenses: Expense[];
-  prospects: Prospect[];
-  clients: Client[];
-  poulaillers: Poulailler[];
   onNavigateTab: (tab: any) => void;
 }
 
-export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
-  invoices,
-  stockLots,
-  stockLosses,
-  expenses,
-  prospects,
-  clients,
-  poulaillers,
-  onNavigateTab
-}) => {
-  // Calculations for 10 KPIs
-  const totalCA = invoices.reduce((acc, inv) => acc + inv.totalFCFA, 0);
-  const totalImpayes = invoices.reduce((acc, inv) => acc + inv.soldeDuFCFA, 0);
-  const totalExpenses = expenses.reduce((acc, exp) => acc + exp.montantFCFA, 0);
-  const beneficeEstime = totalCA - totalExpenses;
+export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ onNavigateTab }) => {
+  const shifts = useLiveQuery(() => db.productionShifts.toArray()) || [];
+  const products = useLiveQuery(() => db.alveoleProducts.toArray()) || [];
+  const rawMaterials = useLiveQuery(() => db.rawMaterials.toArray()) || [];
+  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
+  const expenses = useLiveQuery(() => db.expenses.toArray()) || [];
 
-  // Stock Calculation (EXCLUSIVELY IN EGGS)
-  const totalOeufsRecus = stockLots.reduce((acc, lot) => acc + lot.quantiteOeufsRecus, 0);
-  const totalOeufsVendus = invoices.reduce((acc, inv) => 
-    acc + inv.items.reduce((sum, item) => sum + item.quantiteOeufs, 0), 0
-  );
-  const totalOeufsPerdusCat1 = stockLosses
-    .filter(l => l.typePerte.includes('Catégorie 1'))
-    .reduce((acc, l) => acc + l.quantiteOeufs, 0);
-  const totalOeufsPerdusCat2 = stockLosses
-    .filter(l => l.typePerte.includes('Catégorie 2'))
-    .reduce((acc, l) => acc + l.quantiteOeufs, 0);
-  
-  const totalOeufsPerdus = totalOeufsPerdusCat1 + totalOeufsPerdusCat2;
-  const stockOeufsDisponible = Math.max(0, totalOeufsRecus - totalOeufsVendus - totalOeufsPerdus);
-  const tauxPertePercent = totalOeufsRecus > 0 ? ((totalOeufsPerdus / totalOeufsRecus) * 100).toFixed(1) : '0';
+  const today = new Date().toISOString().split('T')[0];
+  const todayShifts = shifts.filter(s => s.date === today);
 
-  // CRM Conversions
-  const totalProspects = prospects.length;
-  const prospectsConvertis = prospects.filter(p => p.status === 'Converti').length;
-  const tauxConversion = totalProspects > 0 ? Math.round((prospectsConvertis / totalProspects) * 100) : 0;
+  // Production du jour
+  const productionJourAlveoles = todayShifts.reduce((sum, s) => sum + s.alvéolesConformes, 0);
+  const productionJourFardeaux = todayShifts.reduce((sum, s) => sum + s.fardeauxEmballes, 0);
+  const objectifJournalier = 50000;
+  const progressionObjectifPct = Math.min(100, Math.round((productionJourAlveoles / objectifJournalier) * 100));
 
-  // Dynamically compute real revenue by day of week from actual invoices
-  const daysOfWeek = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-  const realCaByDay: Record<string, number> = { Lun: 0, Mar: 0, Mer: 0, Jeu: 0, Ven: 0, Sam: 0, Dim: 0 };
-  
+  // TRS moyen
+  const avgTRS = shifts.length > 0
+    ? (shifts.reduce((sum, s) => sum + s.trsOEE, 0) / shifts.length).toFixed(1)
+    : '84.8';
+
+  // Chiffre d'affaires
+  const caTotal = invoices.reduce((sum, inv) => sum + inv.totalTTC, 0);
+  const caEncaisse = invoices.reduce((sum, inv) => sum + inv.acompteVerse, 0);
+  const totalDepenses = expenses.reduce((sum, exp) => sum + exp.montant, 0);
+  const resultatNet = caEncaisse - totalDepenses;
+
+  // Stocks
+  const totalCartonKg = rawMaterials
+    .filter(m => m.categorie === 'PAPIER_CARTON')
+    .reduce((sum, m) => sum + m.stockActuel, 0);
+  const joursAutonomieCarton = Math.round(totalCartonKg / 3200);
+  const totalFardeauxPrets = products.reduce((sum, p) => sum + p.stockFardeaux, 0);
+
+  // Données graphiques
+  const productSalesMap: Record<string, number> = {};
   invoices.forEach(inv => {
-    if (inv.date) {
-      const d = new Date(inv.date);
-      const dayName = daysOfWeek[d.getDay()];
-      if (realCaByDay[dayName] !== undefined) {
-        realCaByDay[dayName] += inv.totalFCFA;
-      }
-    }
+    inv.articles.forEach(art => {
+      productSalesMap[art.designation] = (productSalesMap[art.designation] || 0) + art.totalLigneFCFA;
+    });
   });
 
-  const caData = [
-    { name: 'Lun', ca: realCaByDay['Lun'] },
-    { name: 'Mar', ca: realCaByDay['Mar'] },
-    { name: 'Mer', ca: realCaByDay['Mer'] },
-    { name: 'Jeu', ca: realCaByDay['Jeu'] },
-    { name: 'Ven', ca: realCaByDay['Ven'] },
-    { name: 'Sam', ca: realCaByDay['Sam'] },
-    { name: 'Dim', ca: realCaByDay['Dim'] },
-  ];
+  const pieData = Object.entries(productSalesMap).map(([name, value]) => ({
+    name,
+    value
+  }));
 
-  const lossesPieData = [
-    { name: 'Cat. 1 (Fissurés)', value: totalOeufsPerdusCat1, color: '#f59e0b' },
-    { name: 'Cat. 2 (Cassés)', value: totalOeufsPerdusCat2, color: '#ef4444' },
-  ];
+  const COLORS = ['#3B82F6', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6'];
+
+  const recentShiftsData = [...shifts].slice(-6).map(s => ({
+    name: `${s.date.slice(5)} (${s.shift === 'MATIN_06H_14H' ? 'M' : s.shift === 'SOIR_14H_22H' ? 'S' : 'N'})`,
+    alvéoles: s.alvéolesConformes,
+    trs: s.trsOEE
+  }));
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 md:p-6 glass-panel rounded-2xl border border-amber-200 shadow-sm bg-white">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="bg-amber-500 text-white font-extrabold text-[10px] md:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
-              BS DISTRIBUTION SUARL
+    <div className="space-y-6">
+      {/* Bannière de Bienvenue Exécutive */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 rounded-3xl text-white shadow-2xl border border-slate-800 relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Usine Opérationnelle • 100% Pâte Recyclée
+              </span>
+              <span className="text-xs text-slate-400">Dakar - Thiès - Régions</span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight">
+              Tableau de Bord Exécutif & Pilotage Usine
+            </h1>
+            <p className="text-sm text-slate-300 mt-2 max-w-2xl">
+              Supervision en temps réel des lignes de moulage d'alvéoles, maîtrise du rendement synthétique (TRS), stocks de cartons et performances commerciales.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick={() => onNavigateTab('productivite')}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-lg active:scale-95 flex items-center gap-1.5"
+            >
+              <Gauge className="w-4 h-4" />
+              Pilotage Productivité & TRS
+            </button>
+            <button
+              onClick={() => onNavigateTab('commercial')}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition-all active:scale-95 flex items-center gap-1.5"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Commandes & Facturation
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Cartes Cadrans Principaux */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Production du Jour */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-amber-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Production du Jour</span>
+            <span className="p-2 rounded-xl bg-amber-50 text-amber-600">
+              <Factory className="w-5 h-5" />
             </span>
-            <span className="text-[10px] md:text-xs text-slate-500 font-bold">Dashboard Exécutif Keur Massar</span>
           </div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-1.5 font-display">Tableau de Bord Général</h2>
-          <p className="text-[11px] md:text-xs text-slate-600 font-medium">Pilotage financier, commercial et suivi des stocks d'œufs au Sénégal.</p>
+          <div className="mt-3">
+            <div className="text-3xl font-black text-slate-900 tracking-tight">
+              {productionJourAlveoles.toLocaleString()}{' '}
+              <span className="text-xs font-semibold text-slate-500">alvéoles</span>
+            </div>
+            <div className="flex items-center justify-between text-xs mt-2">
+              <span className="text-indigo-600 font-bold">{productionJourFardeaux} fardeaux emballés</span>
+              <span className="text-slate-400">{progressionObjectifPct}% de l'obj.</span>
+            </div>
+            <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
+              <div 
+                className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${progressionObjectifPct}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => onNavigateTab('sales')}
-            className="px-4 md:px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
-          >
-            <TrendingUp className="w-4 h-4" /> Nouvelle Vente Facturée
-          </button>
+        {/* Taux de Rendement Synthétique (TRS) */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-emerald-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">TRS / OEE Moyen</span>
+            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <Gauge className="w-5 h-5" />
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-black text-slate-900 tracking-tight">
+              {avgTRS}%
+            </div>
+            <div className="flex items-center gap-1 text-xs text-emerald-600 font-semibold mt-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Niveau Industriel Conforme (&gt;80%)</span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">Cadence, disponibilité et qualité conformes</p>
+          </div>
+        </div>
+
+        {/* Chiffre d'Affaires Global */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-blue-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chiffre d'Affaires</span>
+            <span className="p-2 rounded-xl bg-blue-50 text-blue-600">
+              <DollarSign className="w-5 h-5" />
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-black text-slate-900">
+              {caTotal.toLocaleString()} <span className="text-xs font-semibold text-slate-500">FCFA</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-emerald-600 font-semibold mt-1">
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>{caEncaisse.toLocaleString()} FCFA encaissés</span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">Ventes fermes avicoles et grossistes</p>
+          </div>
+        </div>
+
+        {/* Autonomie Stock Carton */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-purple-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Autonomie Matière</span>
+            <span className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              <Layers className="w-5 h-5" />
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-black text-slate-900">
+              ~{joursAutonomieCarton} <span className="text-sm font-semibold text-slate-500">Jours</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-purple-600 font-semibold mt-1">
+              <span>{(totalCartonKg / 1000).toFixed(1)} Tonnes de balles OCC</span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">{totalFardeauxPrets.toLocaleString()} fardeaux PF prêts</p>
+          </div>
         </div>
       </div>
 
-      {/* 10 KPIs Mandatory Grid - always 2 cols on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {/* KPI 1 : CA Global */}
-        <div className="glass-card p-4 rounded-2xl border border-amber-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">1. Chiffre d'Affaires</span>
-            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-amber-700 mt-2">{totalCA.toLocaleString('fr-FR')} FCFA</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Ventes d'œufs enregistrées</p>
-        </div>
-
-        {/* KPI 2 : Impayés & Crédits */}
-        <div className="glass-card p-4 rounded-2xl border border-red-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">2. Impayés & Crédits</span>
-            <div className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-red-600 mt-2">{totalImpayes.toLocaleString('fr-FR')} FCFA</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Factures en attente de solde</p>
-        </div>
-
-        {/* KPI 3 : Total Dépenses */}
-        <div className="glass-card p-4 rounded-2xl border border-blue-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">3. Total Dépenses</span>
-            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-blue-700 mt-2">{totalExpenses.toLocaleString('fr-FR')} FCFA</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Bénéfice estimé : {beneficeEstime.toLocaleString('fr-FR')} FCFA</p>
-        </div>
-
-        {/* KPI 4 : Stock Disponible d'Œufs */}
-        <div className="glass-card p-4 rounded-2xl border border-emerald-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">4. Stock d'Œufs Prêt</span>
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
-              <Boxes className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-emerald-700 mt-2">{stockOeufsDisponible.toLocaleString('fr-FR')} œufs</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Unité unique : Nombre d'œufs</p>
-        </div>
-
-        {/* KPI 5 : Pertes % (Cat 1 & Cat 2) */}
-        <div className="glass-card p-4 rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">5. Taux de Perte %</span>
-            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-              <PieChart className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-amber-700 mt-2">{tauxPertePercent} %</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Total perdus: {totalOeufsPerdus.toLocaleString()} œufs</p>
-        </div>
-
-        {/* KPI 6 : Conversions Prospects */}
-        <div className="glass-card p-4 rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">6. Taux Conversion CRM</span>
-            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600 border border-purple-200">
-              <Users className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-purple-700 mt-2">{tauxConversion} %</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">{prospectsConvertis} clients convertis / {totalProspects} prospects</p>
-        </div>
-
-        {/* KPI 7 : Active Poulaillers */}
-        <div className="glass-card p-4 rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">7. Poulaillers Actifs</span>
-            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-indigo-700 mt-2">{poulaillers.length} poulaillers</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Fermes partenaires référencées</p>
-        </div>
-
-        {/* KPI 8 : Performance Commerciaux */}
-        <div className="glass-card p-4 rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">8. Performance Terrain</span>
-            <div className="p-2.5 rounded-xl bg-teal-50 text-teal-600 border border-teal-200">
-              <Award className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-lg md:text-2xl font-extrabold text-teal-700 mt-2">{clients.length} Clients</p>
-          <p className="text-[10px] text-slate-500 font-medium mt-1">Portefeuille actif Sénégal</p>
-        </div>
-      </div>
-
-      {/* Visual Analytics Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* CA Evolution Bar Chart */}
-        <div className="lg:col-span-2 glass-panel p-4 md:p-6 rounded-2xl border border-slate-200 bg-white">
+      {/* Graphiques interactifs Recharts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Production et TRS récents */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2 font-display">
-                <Activity className="w-4 h-4 text-amber-600" /> Évolution du Chiffre d'Affaires (Ventes d'Œufs)
-              </h3>
-              <p className="text-xs text-slate-500 font-medium">Ventes journalières en FCFA sur la période en cours</p>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-indigo-600" />
+                Performances de Fabrication des Derniers Shifts
+              </h2>
+              <p className="text-xs text-slate-500">Suivi des quantités moulées et du TRS par équipe de production</p>
             </div>
-            <span className="text-xs font-extrabold text-amber-800 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">FCFA</span>
+            <button
+              onClick={() => onNavigateTab('productivite')}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+            >
+              Voir détails <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={caData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `${val / 1000}k`} width={35} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#0f172a', fontSize: '12px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
-                  formatter={(val: any) => [`${val.toLocaleString()} FCFA`, 'Chiffre d\'affaires']}
-                />
-                <Bar dataKey="ca" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              <BarChart data={recentShiftsData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="name" stroke="#64748B" fontSize={11} tickLine={false} />
+                <YAxis yAxisId="left" stroke="#64748B" fontSize={11} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" stroke="#F59E0B" fontSize={11} tickLine={false} domain={[50, 100]} />
+                <Tooltip contentStyle={{ backgroundColor: '#0F172A', color: '#fff', borderRadius: '8px', border: 'none' }} />
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Bar yAxisId="left" dataKey="alvéoles" name="Alvéoles Conformes" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="trs" name="TRS / OEE (%)" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Loss Recharts Pie Chart */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between">
+        {/* Répartition du Chiffre d'Affaires par Format d'Alvéole */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2 font-display">
-              <PieChart className="w-4 h-4 text-red-600" /> Répartition des Pertes d'Œufs
-            </h3>
-            <p className="text-xs text-slate-500 font-medium mb-4">Catégorie 1 (Fissurés) vs Catégorie 2 (Cassés)</p>
+            <h2 className="text-base font-bold text-slate-900 mb-1">
+              Ventes par Format d'Alvéoles
+            </h2>
+            <p className="text-xs text-slate-500 mb-4">Répartition du chiffre d'affaires commercial</p>
 
-            <div className="h-44 w-full flex items-center justify-center">
+            <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RePieChart>
-                  <Pie data={lossesPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value">
-                    {lossesPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={70}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                  >
+                    {pieData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#0f172a', fontSize: '12px', borderRadius: '8px' }} />
-                </RePieChart>
+                  <Tooltip 
+                    formatter={(val: number) => `${val.toLocaleString()} FCFA`}
+                    contentStyle={{ backgroundColor: '#0F172A', color: '#fff', borderRadius: '8px' }}
+                  />
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="space-y-2 border-t border-slate-100 pt-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Cat. 1 (Fissurés / Vente bas prix)
-              </span>
-              <span className="font-extrabold text-amber-700">{totalOeufsPerdusCat1} œufs</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span> Cat. 2 (Cassés irrécupérables)
-              </span>
-              <span className="font-extrabold text-red-600">{totalOeufsPerdusCat2} œufs</span>
-            </div>
+          <div className="space-y-1.5 pt-3 border-t border-slate-100 text-xs">
+            {pieData.map((item, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 truncate max-w-[170px]">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></span>
+                  <span className="text-slate-700 truncate">{item.name}</span>
+                </div>
+                <span className="font-bold text-slate-900">{item.value.toLocaleString()} F</span>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
+
+      {/* Raccourcis Rapides vers les Opérations Usine */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <button
+          onClick={() => onNavigateTab('productivite')}
+          className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="p-2.5 rounded-xl bg-amber-50 text-amber-700 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+              <Factory className="w-5 h-5" />
+            </span>
+            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-amber-500 transition-colors" />
+          </div>
+          <h3 className="font-bold text-slate-900 text-sm mt-3">Relevés de Production</h3>
+          <p className="text-xs text-slate-500 mt-1">Enregistrer un shift, calculer le TRS et les cadences</p>
+        </button>
+
+        <button
+          onClick={() => onNavigateTab('stock')}
+          className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors">
+              <Boxes className="w-5 h-5" />
+            </span>
+            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+          </div>
+          <h3 className="font-bold text-slate-900 text-sm mt-3">Stocks & Balles Carton</h3>
+          <p className="text-xs text-slate-500 mt-1">Inventaire balles OCC, réactifs et fardeaux d'alvéoles</p>
+        </button>
+
+        <button
+          onClick={() => onNavigateTab('commercial')}
+          className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="p-2.5 rounded-xl bg-blue-50 text-blue-700 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <ShoppingBag className="w-5 h-5" />
+            </span>
+            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+          </div>
+          <h3 className="font-bold text-slate-900 text-sm mt-3">Facturation & BL</h3>
+          <p className="text-xs text-slate-500 mt-1">Créer commandes fermes, bons de livraison et factures</p>
+        </button>
+
+        <button
+          onClick={() => onNavigateTab('finances')}
+          className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-purple-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="p-2.5 rounded-xl bg-purple-50 text-purple-700 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+              <DollarSign className="w-5 h-5" />
+            </span>
+            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-purple-500 transition-colors" />
+          </div>
+          <h3 className="font-bold text-slate-900 text-sm mt-3">Trésorerie & Dépenses</h3>
+          <p className="text-xs text-slate-500 mt-1">Comptabilité usine, P&L simplifié et rapprochement</p>
+        </button>
       </div>
     </div>
   );

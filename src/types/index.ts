@@ -1,7 +1,8 @@
 export type UserRole = 
-  | 'ADMIN_GENERAL'
-  | 'COMMERCIAL'
-  | 'DEMARCHEUR'
+  | 'DIRECTEUR_USINE'
+  | 'RESPONSABLE_PRODUCTION'
+  | 'RESPONSABLE_STOCK'
+  | 'RESPONSABLE_COMMERCIAL'
   | 'COMPTABLE'
   | 'SUPER_ADMIN';
 
@@ -21,66 +22,220 @@ export type SenegalRegion =
   | 'Tambacounda'
   | 'Ziguinchor';
 
+// Types d'acteurs clients pour les alvéoles
 export type ClientCategory = 
-  | 'Grossiste'
-  | 'Alimentation'
-  | 'Supérette'
-  | 'Mini-market'
-  | 'Fast-food'
-  | 'Boutique'
-  | 'Tangana'
-  | 'Autre';
+  | 'Ferme Avicole Ponte'
+  | 'Couvoir Industriel'
+  | 'Grossiste Distributeur Emballages'
+  | 'Coopérative Avicole'
+  | 'Supermarché / Centrale d\'Achat'
+  | 'Conditionneur d\'Œufs'
+  | 'Autre Client B2B';
 
-export type ProspectStatus = 
-  | 'Nouveau'
-  | 'Contacté'
-  | 'En discussion'
-  | 'À relancer'
-  | 'Converti'
-  | 'Perdu';
+// Types de produits alvéoles
+export type AlveoleFormatType = 
+  | 'PLATEAU_30'
+  | 'BOITE_6'
+  | 'BOITE_10'
+  | 'BOITE_12'
+  | 'PLATEAU_30_EXPORT';
 
-export type PoulaillerStatus = 
-  | 'Prospect'
-  | 'Contact'
-  | 'Visite'
-  | 'Contrat'
-  | 'Fournisseur Actif'
-  | 'Inactif';
+export interface AlveoleProduct {
+  id: string;
+  reference: string;
+  nom: string;
+  format: AlveoleFormatType;
+  description: string;
+  capaciteOeufs: number;
+  poidsMoyenGrammes: number; // ex: 68g
+  quantiteParFardeau: number; // ex: 100 unités par paquet/fardeau
+  prixUnitaireFCFA: number; // Prix par alvéole
+  prixFardeauFCFA: number; // Prix du fardeau
+  stockFardeaux: number;
+  stockTotalUnites: number;
+  seuilAlerteFardeaux: number;
+  couleur: string; // ex: Gris naturel, Vert écologique, Rose
+  imageUrl?: string;
+}
 
+// Matières Premières & Consommables Usine
+export type RawMaterialCategory = 
+  | 'PAPIER_CARTON'
+  | 'LIANT_ADJUVANT'
+  | 'HYDROFUGE'
+  | 'COLORANT'
+  | 'EMBALLAGE_CERCLAGE'
+  | 'PIECE_USURE';
+
+export interface RawMaterialStock {
+  id: string;
+  reference: string;
+  nom: string;
+  categorie: RawMaterialCategory;
+  unite: 'Kg' | 'Tonne' | 'Litre' | 'Rouleau' | 'Unité';
+  stockActuel: number;
+  seuilSecurite: number;
+  coutMoyenAchatFCFA: number;
+  fournisseurPrincipal?: string;
+  emplacementStock: string;
+  derniereReception?: string;
+}
+
+// Relevés de Shifts & Indicateurs de Productivité Industriels
+export type ShiftType = 'MATIN_06H_14H' | 'SOIR_14H_22H' | 'NUIT_22H_06H';
+
+export interface ProductionShiftRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  shift: ShiftType;
+  ligneProduction: string; // ex: "Ligne 1 - Mouleuse Rotative 3000 alv/h"
+  responsableShift: string;
+  produitId: string;
+  produitNom: string;
+  
+  // Temps industriel
+  heuresPlanifiees: number; // ex: 8h
+  heuresFonctionnement: number; // ex: 7.2h
+  heuresArret: number; // ex: 0.8h
+  motifArret?: string; // ex: Bourrage séchoir, nettoyage tamis
+
+  // Quantités produites
+  alvéolesConformes: number; // Unités bonnes
+  fardeauxEmballes: number; // Fardeaux ficelés
+  rebutsKilos: number; // Rebuts recyclés en pulpe
+  rebutsPourcentage: number;
+
+  // Matières consommées
+  papierCartonConsommeKg: number;
+  adjuvantKg: number;
+  energieKwh?: number;
+  eauRecycleeM3?: number;
+
+  // KPIs de Productivité calculés (TRS / OEE)
+  cadenceHoraireReelle: number; // alvéoles / heure
+  cadenceTheorique: number; // alvéoles / heure
+  tauxDisponibilite: number; // (Heures Fonc / Heures Planif) * 100
+  tauxPerformance: number; // (Cadence Réelle / Cadence Théorique) * 100
+  tauxQualite: number; // (Alvéoles Bonnes / Total Fabriqué) * 100
+  trsOEE: number; // Disponibilité x Performance x Qualité
+  ratioKgPar1000Alveoles: number; // kg papier consommé pour 1000 alvéoles
+  statutControleQualite: 'CONFORME' | 'SOUS_SURVEILLANCE' | 'NON_CONFORME';
+  observations?: string;
+}
+
+// Client B2B
+export interface Client {
+  id: string;
+  codeClient: string;
+  raisonSociale: string;
+  contactNom: string;
+  telephone: string;
+  email?: string;
+  categorie: ClientCategory;
+  region: SenegalRegion;
+  adresse: string;
+  capaciteFermePoules?: number;
+  consommationMensuelleEstimeeAlveoles?: number;
+  soldeDuFCFA: number;
+  limiteCreditFCFA: number;
+  delaiPaiementJours: number;
+  coordonneesGPS?: { latitude: number; longitude: number };
+  notes?: string;
+}
+
+// Commandes & Factures
 export type OrderStatus = 
-  | 'Brouillon'
-  | 'En attente de validation'
-  | 'Validée'
-  | 'Préparée'
-  | 'Livrée'
-  | 'Partiellement livrée'
-  | 'Annulée';
+  | 'DEVIS'
+  | 'CONFIRMEE'
+  | 'EN_PRODUCTION'
+  | 'PRETE_EXPEDITION'
+  | 'EXPEDIEE'
+  | 'LIVREE'
+  | 'ANNULEE';
 
-export type PaymentMethod = 
-  | 'Wave'
-  | 'Orange Money'
-  | 'Free Money'
-  | 'Espèces'
-  | 'Chèque'
-  | 'Virement Bancaire';
+export type PaymentStatus = 'PAYE' | 'ACOMPTE' | 'NON_PAYE';
+export type PaymentMethod = 'Wave' | 'Orange Money' | 'Virement Bancaire' | 'Chèque' | 'Espèces';
 
-export type PaymentStatus = 
-  | 'Payée'
-  | 'Acompte'
-  | 'Non Payée / Crédit';
+export interface OrderItem {
+  produitId: string;
+  reference: string;
+  designation: string;
+  format: AlveoleFormatType;
+  fardeaux: number;
+  quantiteUnites: number;
+  prixUnitaireFCFA: number;
+  totalLigneFCFA: number;
+}
 
-export type EggCategoryType = 
-  | 'Œufs Gros Calibre'
-  | 'Œufs Poulettes'
-  | 'Œufs Fissurés (Cat 1)'
-  | 'Œufs Cassés (Cat 2)';
+export interface Invoice {
+  id: string;
+  numero: string; // FAC-2610-0001
+  numeroBL?: string; // BL-2610-0001
+  date: string;
+  dateEcheance: string;
+  clientId: string;
+  clientNom: string;
+  clientRegion: SenegalRegion;
+  articles: OrderItem[];
+  totalHT: number;
+  tvaMontant: number;
+  totalTTC: number;
+  acompteVerse: number;
+  soldeRestant: number;
+  statutCommande: OrderStatus;
+  statutPaiement: PaymentStatus;
+  modePaiementPrefere: PaymentMethod;
+  notesLivraison?: string;
+  chauffeurNom?: string;
+  camionImmatriculation?: string;
+}
 
-export interface GPSLocation {
-  latitude: number;
-  longitude: number;
-  accuracy?: number;
-  timestamp: string;
-  capturedBy?: string;
+// Dépenses & Trésorerie
+export type ExpenseCategory = 
+  | 'Matières Premières (Balles Cartons)'
+  | 'Adjuvants & Liants Chimiques'
+  | 'Électricité & Énergie Séchoir'
+  | 'Maintenance Machines & Pièces'
+  | 'Salaires & Primes Usine'
+  | 'Transport & Carburant'
+  | 'Eau & Traitement Recyclage'
+  | 'Emballage & Cerclage'
+  | 'Charges Administratives & Taxes'
+  | 'Autre Dépense Usine';
+
+export interface Expense {
+  id: string;
+  date: string;
+  categorie: ExpenseCategory;
+  montant: number;
+  beneficiaire: string;
+  description: string;
+  comptePaiement: 'Caisse Usine' | 'Banque Principale' | 'Wave Business' | 'Orange Money Pro';
+  justificatifRef?: string;
+  enregistrePar: string;
+}
+
+// Mouvements de Stock
+export interface StockMovement {
+  id: string;
+  date: string;
+  type: 'ENTREE_RECEPTION' | 'SORTIE_PULPEUR' | 'ENTREE_PRODUCTION_PF' | 'SORTIE_EXPEDITION' | 'REBUT_RECYLE';
+  articleType: 'MATIERE_PREMIERE' | 'PRODUIT_FINI';
+  articleId: string;
+  articleNom: string;
+  quantite: number;
+  unite: string;
+  coutUnitaire?: number;
+  referenceLot?: string;
+  responsable: string;
+  motif: string;
+}
+
+// Compte de Trésorerie
+export interface AccountBalance {
+  nom: 'Caisse Usine' | 'Banque Principale' | 'Wave Business' | 'Orange Money Pro';
+  solde: number;
+  dernierRapprochement: string;
 }
 
 export interface User {
@@ -92,196 +247,9 @@ export interface User {
   avatar?: string;
 }
 
-export interface ProspectInteraction {
-  id: string;
-  prospectId: string;
-  date: string;
-  typeInteraction: 'Appel' | 'Visite Terrain' | 'Rendez-vous' | 'Relance SMS/WhatsApp';
-  commentaire: string;
-  prochaineAction?: string;
-  responsable: string;
-}
-
-export interface Prospect {
-  id: string;
-  nom: string;
-  contact: string;
-  responsable: string;
-  telephone: string;
-  adresse: string;
-  region: SenegalRegion;
-  departement: string;
-  commune: string;
-  gps?: GPSLocation;
-  typeProducteur?: string;
-  nombrePoulets?: number;
-  productionJournaliereOeufs?: number;
-  status: ProspectStatus;
-  scoring: number; // 0 - 100
-  notes: string;
-  commercialId: string;
-  commercialName: string;
-  createdAt: string;
-  updatedAt: string;
-  interactions?: ProspectInteraction[];
-}
-
-export interface Client {
-  id: string;
-  raisonSociale: string;
-  responsable: string;
-  telephone: string;
-  email?: string;
-  adresse: string;
-  region: SenegalRegion;
-  departement: string;
-  commune: string;
-  gps?: GPSLocation;
-  categorie: ClientCategory;
-  commercialId: string;
-  commercialName: string;
-  soldeCreance: number; // En FCFA
-  totalAchatsFCFA: number;
-  createdAt: string;
-}
-
-export interface Poulailler {
-  id: string;
-  nom: string;
-  proprietaire: string;
-  telephone: string;
-  adresse: string;
-  region: SenegalRegion;
-  departement: string;
-  commune: string;
-  gps?: GPSLocation;
-  capacitePoulets: number;
-  productionJournaliereOeufs: number; // En nombre d'œufs
-  demarcheurId: string;
-  demarcheurName: string;
-  status: PoulaillerStatus;
-  tauxCommissionPercent: number; // ex: 2.5%
-  createdAt: string;
-}
-
-export interface SaleItem {
-  typeOeuf: EggCategoryType;
-  quantiteOeufs: number; // UNITE UNIQUE : Nombre d'œufs
-  prixUnitaireOeuf: number; // Prix par œuf en FCFA
-  totalFCFA: number;
-}
-
-export interface Invoice {
-  id: string;
-  numero: string; // FAC-YYMM-####
-  numeroBL?: string; // BL-YYMM-####
-  clientId: string;
-  clientNom: string;
-  commercialId: string;
-  commercialNom: string;
-  items: SaleItem[];
-  totalFCFA: number;
-  acompteFCFA: number;
-  soldeDuFCFA: number;
-  modePaiement: PaymentMethod;
-  referencePaiement?: string;
-  statutPaiement: PaymentStatus;
-  statutVente: OrderStatus;
-  date: string;
-  livreurNom?: string;
-  observations?: string;
-}
-
-export interface DeliveryMissionPlanner {
-  id: string;
-  numeroBL: string; // BL-YYMM-####
-  factureNumero: string;
-  clientNom: string;
-  telephone: string;
-  adresse: string;
-  region: SenegalRegion;
-  commune: string;
-  quantiteOeufs: number;
-  livreurNom: string;
-  vehiculeType: string;
-  datePlanifiee: string;
-  statut: 'Préparée' | 'En cours de livraison' | 'Livrée' | 'Livraison Partielle' | 'Annulée';
-  remarques?: string;
-}
-
-export interface InterregionalMission {
-  id: string;
-  titre: string;
-  responsableNom: string;
-  destinationRegion: SenegalRegion;
-  dateDepart: string;
-  dateRetour?: string;
-  stockDepartOeufs: number; // UNITE UNIQUE : ŒUFS
-  stockVenduOeufs: number;
-  stockRetourneOeufs: number;
-  stockCasseOeufs: number;
-  stockOffertOeufs: number;
-  fraisTransportFCFA: number;
-  fraisCarburantFCFA: number;
-  fraisHebergementFCFA: number;
-  fraisRestaurationFCFA: number;
-  fraisPeagesFCFA: number;
-  fraisDiversFCFA: number;
-  recettesTotalesFCFA: number;
-  beneficeNetFCFA: number;
-  statut: 'En cours' | 'Clôturée';
-}
-
-export interface StockLot {
-  id: string;
-  referenceLot: string;
-  poulaillerNom: string;
-  fournisseurNom: string;
-  dateReception: string;
-  quantiteOeufsRecus: number; // UNITE UNIQUE
-  prixAchatUnitaireOeuf: number; // Prix par œuf FCFA
-  typeOeuf: EggCategoryType;
-  remarques?: string;
-}
-
-export interface StockLoss {
-  id: string;
-  date: string;
-  typePerte: 'Catégorie 1 - Fissurés' | 'Catégorie 2 - Cassés irrécupérables';
-  quantiteOeufs: number; // UNITE UNIQUE
-  prixValeurFCFA: number;
-  motif: string;
-  saisiPar: string;
-}
-
-export interface Expense {
-  id: string;
-  date: string;
-  categorie: 'Transport' | 'Carburant' | 'Repas' | 'Communication' | 'Hébergement' | 'Divers';
-  montantFCFA: number;
-  description: string;
-  commercialId?: string;
-  commercialNom: string;
-  justificatifRef?: string;
-}
-
-export interface CommissionRecord {
-  id: string;
-  demarcheurId: string;
-  demarcheurNom: string;
-  poulaillerNom: string;
-  factureNumero: string;
-  montantVenteFCFA: number;
-  tauxPercent: number;
-  montantCommissionFCFA: number;
-  periode: string;
-  statut: 'À payer' | 'Payée';
-  dateAttribuee: string;
-}
-
 export interface SystemNotification {
   id: string;
-  type: 'stock' | 'creance' | 'relance' | 'commission';
+  type: 'production' | 'stock' | 'finance' | 'commercial';
   title: string;
   message: string;
   date: string;
@@ -293,9 +261,8 @@ export interface AuditLog {
   timestamp: string;
   userNom: string;
   userRole: UserRole;
-  action: string; // 'CREATION', 'MODIFICATION', 'SUPPRESSION', 'VALIDATION'
-  entite: string; // 'Facture', 'Prospect', 'Client', 'Stock', 'Paiement'
+  action: string;
+  entite: string;
   description: string;
-  ancienneValeur?: string;
   nouvelleValeur?: string;
 }

@@ -1,639 +1,623 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  ShoppingBag, Building2, Phone, CheckCircle2, 
-  ShieldCheck, Truck, LogIn, 
-  ChevronDown, Zap, Award, Users, Globe2, Menu, X 
+  Factory, Boxes, ShieldCheck, Truck, LogIn, 
+  ChevronDown, Zap, Award, Users, Globe2, Phone, CheckCircle2,
+  Layers, ArrowRight, Calculator, Leaf, Recycle, Scale
 } from 'lucide-react';
-import { PublicPortalModal } from './PublicPortalModal';
 
 interface PublicLandingPageProps {
   onOpenLogin: () => void;
 }
 
-const PRODUCTS = [
+const ALVEOLE_CATALOG = [
   {
-    id: 'GROS',
-    image: '/gros_real.png',
-    title: 'Œufs Extra & Gros Calibre',
-    badge: 'Bestseller Grossistes & Supérettes',
+    id: 'ALV-30-STD',
+    title: 'Plateau 30 Œufs Standard',
+    format: '30 Alvéoles (295 × 295 mm)',
+    badge: 'Standard Avicole Bestseller',
+    priceUnit: 45,
+    fardeauQty: 100,
+    priceFardeau: 4500,
+    description: 'Plateau universel pour le ramassage en ferme, transport et vente en gros. Rigidité optimale, emboîtement compact.',
+    features: ['100% Pâte de Carton Recyclée', 'Rigidité renforcée anti-écrasement', 'Conditionnement par fardeaux de 100 pcs'],
+    color: 'Gris Recyclé Naturel'
+  },
+  {
+    id: 'ALV-30-EXP',
+    title: 'Plateau 30 Œufs Renforcé Export',
+    format: '30 Alvéoles Haute Densité',
+    badge: 'Longue Distance & Camions',
+    priceUnit: 55,
+    fardeauQty: 100,
+    priceFardeau: 5500,
+    description: 'Version dense enrichie en liant végétal pour gerbage sur plusieurs mètres en camion sans déformation.',
+    features: ['Résistance mécanique supérieure', 'Spécial transport interrégional', 'Fardeau cerclé sous film étanche'],
+    color: 'Gris Foncé Kraft'
+  },
+  {
+    id: 'BOX-06',
+    title: 'Boîte 6 Œufs Fermante Clipsable',
+    format: 'Boîte 6 Alvéoles avec Couvercle',
+    badge: 'Grande Distribution & Supérettes',
+    priceUnit: 65,
+    fardeauQty: 120,
+    priceFardeau: 7800,
+    description: 'Conditionnement au détail haut de gamme pour supermarchés. Double clip de verrouillage sécurisé.',
+    features: ['Fermeture clipsable automatique', 'Face supérieure prête pour étiquette', 'Protection antichoc 360°'],
+    color: 'Vert Écologique'
+  },
+  {
+    id: 'BOX-10',
+    title: 'Boîte 10 Œufs Format Familial',
+    format: 'Boîte 10 Alvéoles Fermante',
+    badge: 'Format Grand Public',
     priceUnit: 85,
-    minCmd: '1 500 œufs',
-    description: 'Œufs frais de gros calibre issus d\'élevages sénégalais contrôlés. Coquille solide, jaune éclatant, fraîcheur garantie.',
-    features: ['Calibre Supérieur > 60g', 'Livraison Tout le Sénégal (14 Régions)', 'Contrôle Sanitaire Strict'],
+    fardeauQty: 100,
+    priceFardeau: 8500,
+    description: 'Boîte 10 alvéoles pour la consommation des ménages et restaurants. Protection thermique et respirabilité.',
+    features: ['Protection coquille renforcée', 'Empilement facile en rayon', 'Biodégradable et compostable'],
+    color: 'Gris Recyclé Naturel'
   },
   {
-    id: 'POULETTES',
-    image: '/poulettes_real.png',
-    title: 'Œufs Calibre Moyen (Poulettes)',
-    badge: 'Restaurants & Ménages',
-    priceUnit: 75,
-    minCmd: '1 000 œufs',
-    description: 'Parfaits pour la restauration rapide, pâtisseries et consommation familiale. Prix compétitif en demi-gros.',
-    features: ['Calibre 50g – 55g', 'Enlèvement Dépôt ou Livraison Régions', 'Prix Compétitif en Gros'],
-  },
-  {
-    id: 'FISSURES',
-    image: '/fissures_real.png',
-    title: 'Œufs Fissurés Cat. 1',
-    badge: 'Économique Pâtisseries',
-    priceUnit: 60,
-    minCmd: '500 œufs',
-    description: 'Œufs ultra-frais avec légère fissure de transport. Idéaux en cuisine, pâtisserie, boulangerie. Tarif réduit.',
-    features: ['Ultra-Frais du jour', 'Tarif Réduit Spécial', 'Expédition Régionale Sécurisée'],
+    id: 'BOX-12',
+    title: 'Boîte 12 Œufs Double Rangée (1 Douzaine)',
+    format: 'Boîte 12 Alvéoles (2 × 6)',
+    badge: 'Format Premium 1 Douzaine',
+    priceUnit: 95,
+    fardeauQty: 100,
+    priceFardeau: 9500,
+    description: 'Le format classique de la douzaine pour les fermes avicoles souhaitant valoriser leur production locale.',
+    features: ['Format douzaine premium', 'Haute respirabilité de la pâte moulée', 'Absorption naturelle de l\'humidité'],
+    color: 'Blanc Crème Naturel'
   }
 ];
 
-const STATS = [
-  { icon: Award, val: '+5 ans', label: "D'expérience au Sénégal" },
-  { icon: Globe2, val: '14 Régions', label: 'Couverture Nationale' },
-  { icon: Truck, val: '48h', label: 'Délai Livraison Régions' },
-  { icon: Zap, val: '100%', label: 'Fraîcheur Garantie' },
-];
-
 export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onOpenLogin }) => {
-  const [showOrderModal, setShowOrderModal]   = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [qty, setQty]                         = useState(1500);
-  const [selProd, setSelProd]                 = useState(PRODUCTS[0]);
-  const [scrolled, setScrolled]               = useState(false);
-  const [floatVisible, setFloatVisible]       = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState(ALVEOLE_CATALOG[0]);
+  const [quantiteFardeaux, setQuantiteFardeaux] = useState(50);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteSuccess, setQuoteSuccess] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 60);
-      setFloatVisible(window.scrollY > 300);
-    };
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  // Formulaire devis
+  const [quoteData, setQuoteData] = useState({
+    nomFerme: '',
+    contact: '',
+    telephone: '+221 ',
+    region: 'Thiès',
+    message: ''
+  });
 
-  const total = qty * selProd.priceUnit;
-  const waUrl = `https://wa.me/221766225979?text=${encodeURIComponent(`Bonjour BS Distribution SUARL, je voudrais commander ${qty.toLocaleString()} ${selProd.title} (${total.toLocaleString()} FCFA).`)}`;
+  // Calcul du simulateur
+  const totalAlveolesSimule = quantiteFardeaux * selectedFormat.fardeauQty;
+  // Tarif dégressif selon volume
+  let remisePct = 0;
+  if (quantiteFardeaux >= 100) remisePct = 5;
+  if (quantiteFardeaux >= 300) remisePct = 10;
+  if (quantiteFardeaux >= 500) remisePct = 15;
+
+  const montantBrut = quantiteFardeaux * selectedFormat.priceFardeau;
+  const montantRemise = Math.round((montantBrut * remisePct) / 100);
+  const montantNet = montantBrut - montantRemise;
+
+  const handleSendQuote = (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuoteSuccess(true);
+    setTimeout(() => {
+      setQuoteSuccess(false);
+      setShowQuoteModal(false);
+    }, 2500);
+  };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-slate-900 font-sans antialiased overflow-x-hidden relative">
-
-      {/* ══ FULL-PAGE FIXED BACKGROUND IMAGE ════════════════════════════════ */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-25">
-        <img 
-          src="/farm_bg.png" 
-          alt="BS Distribution Poultry Farm" 
-          className="w-full h-full object-cover filter brightness-105 contrast-105" 
-        />
-      </div>
-
-      {/* ══ TOP INFO BAR ═════════════════════════════════════════════════════ */}
-      <div className="fixed top-0 left-0 right-0 z-[501] bg-slate-900 text-white text-[11px] font-bold px-3 md:px-4 py-2 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
-          <span className="flex items-center gap-1.5 text-amber-400 truncate">
-            <Globe2 className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Vente & Livraison dans les 14 Régions du Sénégal</span>
-          </span>
-          <span className="hidden sm:flex items-center gap-1.5 text-emerald-400 shrink-0">
-            <CheckCircle2 className="w-3 h-3" />
-            Paiement Wave / OM
-          </span>
-        </div>
-        <span className="text-white/80 font-mono text-[10px] md:text-xs shrink-0">📞 +221 76 622 59 79</span>
-      </div>
-
-      {/* ══ MAIN NAVBAR ══════════════════════════════════════════════════════ */}
-      <nav className={`fixed top-8 left-0 right-0 z-[500] bg-white/95 backdrop-blur-md transition-all duration-300 ${
-        scrolled
-          ? 'shadow-lg border-b-2 border-amber-400'
-          : 'border-b border-slate-200 shadow-sm'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-18 flex items-center justify-between gap-2 md:gap-4 py-2 md:py-3">
-          
-          {/* Logo & Name */}
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
-            <div className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-white border border-amber-400 flex items-center justify-center shadow-sm overflow-hidden">
-              <img src="/logo.png" alt="BS DISTRIBUTION" className="h-7 md:h-10 w-auto object-contain" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <span className="font-black text-slate-900 text-sm md:text-xl tracking-tight font-display">BS DISTRIBUTION</span>
-                <span className="text-[8px] md:text-[9px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded uppercase tracking-widest shadow-xs">SUARL</span>
-              </div>
-              <p className="text-[9px] md:text-[10px] text-slate-500 font-semibold hidden sm:block mt-0.5">
-                🌐 Distribution Nationale d'Œufs Frais — Toutes Régions du Sénégal
-              </p>
-            </div>
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-amber-500 selection:text-slate-950">
+      {/* Barre supérieure d'information usine */}
+      <div className="bg-slate-950 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+              <Factory className="w-3.5 h-3.5" />
+              Unité Industrielle de Fabrication d'Alvéoles en Pâte Moulée
+            </span>
+            <span className="hidden md:inline text-slate-500">•</span>
+            <span className="hidden md:flex items-center gap-1 text-emerald-400">
+              <Recycle className="w-3.5 h-3.5" />
+              100% Papiers & Cartons Recyclés
+            </span>
           </div>
 
-          <div className="hidden lg:block w-px h-10 bg-slate-200 mx-2" />
-
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-1 text-xs font-extrabold text-slate-700">
-            {[
-              { href: '#catalogue', label: 'Catalogue Œufs' },
-              { href: '#calculateur', label: 'Simulateur Prix' },
-              { href: '#partenaires', label: 'Poulaillers' },
-            ].map(link => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="relative px-4 py-2.5 rounded-xl hover:bg-slate-100 hover:text-slate-900 transition-all group font-bold"
-              >
-                {link.label}
-                <span className="absolute bottom-1 left-4 right-4 h-0.5 bg-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-full" />
-              </a>
-            ))}
-          </div>
-
-          {/* Desktop & Mobile Actions */}
-          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:flex px-3 md:px-4 py-2 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-sm items-center gap-2 transition-all active:scale-95"
-            >
-              <Phone className="w-4 h-4" />
-              <span>WhatsApp</span>
-            </a>
-
-            <button
-              onClick={() => setShowOrderModal(true)}
-              className="px-3 md:px-4 py-2 md:py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-sm flex items-center gap-1.5 md:gap-2 transition-all active:scale-95 border border-amber-600/30"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Commander</span>
-            </button>
-
+          <div className="flex items-center gap-4 text-[11px]">
+            <span className="flex items-center gap-1 text-slate-400">
+              <Phone className="w-3 h-3 text-amber-400" />
+              Service Commercial : +221 76 622 59 79
+            </span>
             <button
               onClick={onOpenLogin}
-              className="px-2.5 md:px-3 py-2 md:py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center gap-1.5 md:gap-2 transition-all active:scale-95"
+              className="text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1"
             >
-              <LogIn className="w-4 h-4" />
-              <span className="hidden sm:inline">Équipe</span>
-            </button>
-
-            {/* Mobile Hamburger Toggle Button (md:hidden) */}
-            <button
-              onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
-              className="md:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-all ml-1"
-              aria-label="Menu"
-            >
-              {isMobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 text-amber-600" />}
+              <LogIn className="w-3 h-3" />
+              Accès Équipe Usine
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Slide-Down Mobile Navigation Menu */}
-        {isMobileNavOpen && (
-          <div className="md:hidden bg-white border-b-2 border-amber-400 p-4 space-y-3 shadow-2xl animate-in slide-in-from-top duration-300 font-sans">
-            <div className="flex flex-col space-y-1">
-              <a
-                href="#catalogue"
-                onClick={() => setIsMobileNavOpen(false)}
-                className="p-3 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-900 font-extrabold text-xs flex items-center justify-between border border-slate-200"
-              >
-                <span>📦 Catalogue & Tarifs Œufs</span>
-                <ChevronDown className="w-4 h-4 -rotate-90 text-slate-400" />
-              </a>
-
-              <a
-                href="#calculateur"
-                onClick={() => setIsMobileNavOpen(false)}
-                className="p-3 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-900 font-extrabold text-xs flex items-center justify-between border border-slate-200"
-              >
-                <span>🧮 Simulateur de Prix en Direct</span>
-                <ChevronDown className="w-4 h-4 -rotate-90 text-slate-400" />
-              </a>
-
-              <a
-                href="#partenaires"
-                onClick={() => setIsMobileNavOpen(false)}
-                className="p-3 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-900 font-extrabold text-xs flex items-center justify-between border border-slate-200"
-              >
-                <span>🐓 Poulaillers & Éleveurs Partenaires</span>
-                <ChevronDown className="w-4 h-4 -rotate-90 text-slate-400" />
-              </a>
+      {/* Navigation principale */}
+      <header className="bg-white/95 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950">
+              <Factory className="w-6 h-6" />
             </div>
-
-            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full p-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2"
-              >
-                <Phone className="w-4 h-4" />
-                <span>Contact WhatsApp (+221 76 622 59 79)</span>
-              </a>
-
-              <button
-                onClick={() => {
-                  setIsMobileNavOpen(false);
-                  onOpenLogin();
-                }}
-                className="w-full p-3 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2"
-              >
-                <LogIn className="w-4 h-4 text-amber-400" />
-                <span>Espace Connexion Équipe</span>
-              </button>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-black tracking-tight text-slate-950">BS ALVÉOLES</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                  SÉNÉGAL
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium">Emballages Avicoles Éco-Responsables</p>
             </div>
           </div>
-        )}
-      </nav>
 
-      {/* ══ HERO SECTION ═════════════════════════════════════════════════════ */}
-      <section className="relative pt-40 pb-16 md:pt-48 md:pb-12 z-10">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 space-y-10">
-          
-          {/* Centered Text Header */}
-          <div className="text-center space-y-6 max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-slate-200 text-amber-900 text-xs font-extrabold shadow-sm">
-              <Globe2 className="w-4 h-4 text-amber-600" />
-              <span>Réseau N°1 de Distribution d'Œufs dans TOUTES les Régions du Sénégal</span>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+            <a href="#catalogue" className="hover:text-amber-600 transition-colors">Catalogue Alvéoles</a>
+            <a href="#simulateur" className="hover:text-amber-600 transition-colors">Simulateur & Tarifs</a>
+            <a href="#process" className="hover:text-amber-600 transition-colors">Process Écologique</a>
+            <a href="#contact" className="hover:text-amber-600 transition-colors">Contact Usine</a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                const el = document.getElementById('simulateur');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+            >
+              <Calculator className="w-4 h-4 text-amber-400" />
+              Devis en Ligne
+            </button>
+            <button
+              onClick={onOpenLogin}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition-all active:scale-95"
+            >
+              <LogIn className="w-4 h-4" />
+              Accéder à l'ERP Usine
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative pt-12 pb-20 overflow-hidden bg-gradient-to-b from-slate-100 via-white to-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center max-w-3xl mx-auto space-y-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-900 text-xs font-extrabold shadow-sm">
+              <Recycle className="w-4 h-4 text-amber-600 animate-spin-slow" />
+              1er Fabricant Sénégalais d'Alvéoles en Pâte Moulée 100% Recyclée
             </div>
 
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight font-display tracking-tight">
-              Œufs Frais de Table <br />
-              <span className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 bg-clip-text text-transparent">
-                Qualité Supérieure — Tout le Sénégal
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.15]">
+              Alvéoles & Boîtes d'Œufs{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">
+                Haute Résistance
               </span>
             </h1>
 
-            <p className="text-sm md:text-base text-slate-700 max-w-2xl mx-auto font-semibold leading-relaxed">
-              Grossistes, supérettes, restaurants, boulangeries & ménages : approvisionnez-vous directement à Dakar, Thiès, Touba, Saint-Louis, Kaolack, Ziguinchor et dans l'ensemble des 14 régions du Sénégal.
+            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+              Pour les fermes avicoles de ponte, couvoirs, grossistes et supermarchés du Sénégal.
+              Nos alvéoles protègent vos œufs contre les chocs et l'humidité tout en réduisant vos coûts d'emballage.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-              {[
-                { icon: CheckCircle2, text: 'Qualité Contrôlée' },
-                { icon: Truck, text: 'Livraison 14 Régions du Sénégal' },
-                { icon: ShieldCheck, text: 'Wave / Orange Money' }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs font-extrabold text-slate-800 bg-white/90 px-3.5 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                  <item.icon className="w-4 h-4 text-amber-600" />
-                  <span>{item.text}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-              <button
-                onClick={() => setShowOrderModal(true)}
-                className="w-full sm:w-auto px-8 py-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm rounded-2xl shadow-md flex items-center justify-center gap-3 transition-all active:scale-95 border border-amber-600/30"
-              >
-                <ShoppingBag className="w-5 h-5" />
-                <span>Commander en Ligne</span>
-              </button>
-
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <a
-                href="#catalogue"
-                className="w-full sm:w-auto px-6 py-4 bg-white hover:bg-slate-50 text-slate-800 font-extrabold text-sm rounded-2xl border border-slate-300 flex items-center justify-center gap-2 transition-all shadow-sm"
+                href="#simulateur"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-950 hover:bg-slate-900 text-white font-extrabold text-sm shadow-xl transition-all active:scale-95"
               >
-                <span>Voir le Catalogue</span>
-                <ChevronDown className="w-4 h-4 text-slate-600" />
+                <Calculator className="w-4 h-4 text-amber-400" />
+                Calculer un Devis en Direct
               </a>
+              <button
+                onClick={onOpenLogin}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 transition-all active:scale-95"
+              >
+                <Factory className="w-4 h-4" />
+                Ouvrir le Logiciel de Gestion Usine
+              </button>
             </div>
           </div>
 
-          {/* Full-width edge-to-edge Photo Banner */}
-          <div className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden shadow-xl border-y border-slate-200">
-            <img
-              src="/hero_realistic.png"
-              alt="Élevage d'Œufs BS Distribution"
-              className="w-full h-72 sm:h-96 md:h-[480px] object-cover"
-            />
-            <div className="absolute bottom-0 left-0 right-0 px-8 py-5 bg-white border-t border-slate-200 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <p className="text-[10px] text-amber-700 font-extrabold uppercase tracking-widest">Disponibilité & Logistique Nationale</p>
-                <p className="text-sm md:text-base font-black text-slate-900 mt-0.5 font-display">Siège Keur Massar — Envoi Quotidien Dakar & Toutes les Régions du Sénégal</p>
-              </div>
-              <span className="px-4 py-2 bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-black rounded-full shrink-0">
-                ✅ Stock Disponible & Expédition Nationale
-              </span>
+          {/* 4 Chiffres Clés Usine */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-5xl mx-auto">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+              <div className="text-3xl font-black text-amber-600">50 000+</div>
+              <p className="text-xs font-bold text-slate-700 mt-1">Alvéoles / Jour</p>
+              <p className="text-[11px] text-slate-400">Capacité industrielle</p>
             </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══ STATS SECTION ════════════════════════════════════════════════════ */}
-      <section className="py-12 z-10 relative">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <div key={i} className="bg-white/95 p-5 rounded-2xl border border-slate-200 text-center shadow-md hover:shadow-lg transition-all">
-                  <Icon className="w-6 h-6 text-amber-600 mx-auto mb-2" />
-                  <p className="text-2xl md:text-3xl font-black text-slate-900 font-display">{s.val}</p>
-                  <p className="text-xs text-slate-600 font-bold mt-1">{s.label}</p>
-                </div>
-              );
-            })}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+              <div className="text-3xl font-black text-emerald-600">100%</div>
+              <p className="text-xs font-bold text-slate-700 mt-1">Écologique & Recyclé</p>
+              <p className="text-[11px] text-slate-400">Papiers & cartons locaux</p>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+              <div className="text-3xl font-black text-indigo-600">14 Régions</div>
+              <p className="text-xs font-bold text-slate-700 mt-1">Livraison Nationale</p>
+              <p className="text-[11px] text-slate-400">Dakar, Thiès, Kaolack...</p>
+            </div>
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+              <div className="text-3xl font-black text-slate-900">-25%</div>
+              <p className="text-xs font-bold text-slate-700 mt-1">Économie de Coûts</p>
+              <p className="text-[11px] text-slate-400">Par rapport au plastique</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ══ CATALOGUE SECTION ════════════════════════════════════════════════ */}
-      <section id="catalogue" className="py-20 z-10 relative">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-12">
-          
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 px-3.5 py-1 rounded-full uppercase tracking-wider shadow-xs">
-              NOTRE CATALOGUE NATIONAL
+      {/* Catalogue des Formats d'Alvéoles */}
+      <section id="catalogue" className="py-16 bg-white border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              Gamme Industrielle
             </span>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 font-display">
-              Œufs Frais de Table — Tarifs & Distribution
-            </h2>
-            <p className="text-xs md:text-sm text-slate-700 font-semibold">
-              Consultez nos catégories et commandez directement pour une livraison dans votre région au Sénégal.
+            <h2 className="text-3xl font-black text-slate-950 mt-3">Nos Formats d'Alvéoles & Boîtes d'Œufs</h2>
+            <p className="text-sm text-slate-600 mt-2">
+              Conçus selon les normes avicoles internationales pour s'adapter à toutes les calibres d'œufs de table et de reproduction.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {PRODUCTS.map(prod => (
-              <div
-                key={prod.id}
-                className="bg-white/95 rounded-3xl border border-slate-200 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col justify-between"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {ALVEOLE_CATALOG.map((item) => (
+              <div 
+                key={item.id}
+                className="bg-slate-50/70 rounded-3xl p-6 border border-slate-200 hover:border-amber-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
               >
                 <div>
-                  <div className="relative h-60 bg-slate-100 overflow-hidden">
-                    <img
-                      src={prod.image}
-                      alt={prod.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <span className="px-3 py-1 bg-amber-500 text-slate-950 font-black text-[10px] rounded-full shadow-sm">
-                        {prod.badge}
-                      </span>
-                    </div>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                      {item.badge}
+                    </span>
+                    <span className="text-xs font-bold text-slate-400 font-mono">{item.id}</span>
                   </div>
 
-                  <div className="p-6 space-y-4">
-                    <h3 className="text-lg font-extrabold text-slate-900 font-display">{prod.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium">{prod.description}</p>
+                  <h3 className="text-lg font-bold text-slate-950 group-hover:text-amber-600 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-indigo-700 font-semibold mt-0.5">{item.format}</p>
+                  <p className="text-xs text-slate-600 mt-3 leading-relaxed">{item.description}</p>
 
-                    <div className="space-y-1.5 pt-2">
-                      {prod.features.map((feat, fi) => (
-                        <div key={fi} className="flex items-center gap-2 text-xs text-slate-700 font-semibold">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{feat}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <ul className="mt-4 space-y-2 text-xs text-slate-700">
+                    {item.features.map((feat, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                <div className="p-6 pt-0 space-y-4">
-                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div className="mt-6 pt-4 border-t border-slate-200">
+                  <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">Prix Unitaire</p>
-                      <p className="text-xl font-black text-amber-700 font-display">{prod.priceUnit} FCFA <span className="text-xs font-normal text-slate-500">/ œuf</span></p>
+                      <span className="text-[10px] text-slate-400 block font-semibold">Prix Unitaire indicatif</span>
+                      <span className="text-2xl font-black text-slate-950">{item.priceUnit} FCFA</span>
+                      <span className="text-[10px] text-slate-500 block">
+                        Fardeau de {item.fardeauQty} pcs : {item.priceFardeau.toLocaleString()} FCFA
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">Commande Min.</p>
-                      <p className="text-xs font-extrabold text-slate-900">{prod.minCmd}</p>
-                    </div>
-                  </div>
 
-                  <button
-                    onClick={() => {
-                      setSelProd(prod);
-                      setShowOrderModal(true);
-                    }}
-                    className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-                  >
-                    <ShoppingBag className="w-4 h-4 text-amber-400" />
-                    <span>Commander Cette Catégorie</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setSelectedFormat(item);
+                        const el = document.getElementById('simulateur');
+                        el?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"
+                    >
+                      Simuler
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-
         </div>
       </section>
 
-      {/* ══ LIVE CALCULATOR SECTION ══════════════════════════════════════════ */}
-      <section id="calculateur" className="py-20 z-10 relative">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-10">
-          
-          <div className="text-center space-y-3 max-w-3xl mx-auto">
-            <span className="text-xs font-black bg-slate-900 text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-sm inline-flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-400" />
-              SIMULATEUR DE PRIX EN DIRECT & ESTIMATION INSTANTANÉE
+      {/* Simulateur de Commande & Devis en Direct */}
+      <section id="simulateur" className="py-16 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-500/30">
+              Outil Dégressif Grossistes & Fermes
             </span>
-            <h2 className="text-3xl md:text-5xl font-black text-slate-900 font-display tracking-tight">
-              Calculez le Montant de Votre Commande
-            </h2>
-            <p className="text-sm text-slate-700 font-semibold">
-              Obtenez immédiatement votre devis sur mesure avec calcul de livraison pour toutes les régions du Sénégal.
+            <h2 className="text-3xl font-black mt-3">Simulateur de Devis en Direct</h2>
+            <p className="text-sm text-slate-300 mt-2">
+              Bénéficiez de remises immédiates sur vos volumes par camion ou fardeaux complets.
             </p>
           </div>
 
-          <div className="bg-white/95 border border-slate-200 rounded-[32px] p-6 md:p-12 space-y-10 shadow-xl">
-            
-            {/* Step 1: Product Selection Cards */}
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">1</span>
-                CHOISISSEZ LE PRODUIT DÉSIRÉ :
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                {PRODUCTS.map(p => {
-                  const isSelected = selProd.id === p.id;
-                  return (
+          <div className="bg-slate-800/90 rounded-3xl p-6 sm:p-8 border border-slate-700 shadow-2xl backdrop-blur-md grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Colonne réglages */}
+            <div className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                  1. Choisissez le Format d'Alvéole
+                </label>
+                <div className="space-y-2">
+                  {ALVEOLE_CATALOG.map((item) => (
                     <button
-                      key={p.id}
+                      key={item.id}
                       type="button"
-                      onClick={() => setSelProd(p)}
-                      className={`p-5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between gap-3 ${
-                        isSelected
-                          ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-md'
-                          : 'bg-white text-slate-800 border-slate-200 hover:border-slate-400'
+                      onClick={() => setSelectedFormat(item)}
+                      className={`w-full p-3 rounded-xl text-left border transition-all flex items-center justify-between text-xs ${
+                        selectedFormat.id === item.id
+                          ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md'
+                          : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
                       }`}
                     >
                       <div>
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase ${
-                            isSelected ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {p.badge}
-                          </span>
-                          {isSelected && <CheckCircle2 className="w-5 h-5 text-slate-950 shrink-0" />}
-                        </div>
-                        <p className="text-base font-black font-display leading-snug">{p.title}</p>
+                        <div className="font-extrabold">{item.title}</div>
+                        <span className={`text-[10px] ${selectedFormat.id === item.id ? 'text-slate-900' : 'text-slate-400'}`}>
+                          {item.fardeauQty} pcs/fardeau • {item.priceUnit} FCFA/alv.
+                        </span>
                       </div>
-
-                      <div className="pt-2 border-t border-current/15 flex items-baseline justify-between">
-                        <span className="text-xs font-bold opacity-80">Prix Unitaire :</span>
-                        <span className="text-2xl font-black font-display">{p.priceUnit} FCFA <span className="text-xs font-normal">/ œuf</span></span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Step 2: Quantity Direct Typing & Slider */}
-            <div className="space-y-5 bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">2</span>
-                  SAISISSEZ OU AJUSTEZ LA QUANTITÉ D'ŒUFS :
-                </label>
-                
-                {/* Direct Typing Input Box */}
-                <div className="flex items-center gap-3 bg-white border-2 border-slate-300 rounded-2xl px-5 py-3 shadow-xs focus-within:border-slate-900">
-                  <input
-                    type="number"
-                    min="100"
-                    max="500000"
-                    step="100"
-                    value={qty || ''}
-                    onChange={e => setQty(Math.max(0, Number(e.target.value)))}
-                    className="w-44 bg-transparent text-slate-900 font-black text-2xl font-display focus:outline-none text-right"
-                    placeholder="Ex: 5000"
-                  />
-                  <span className="text-sm font-extrabold text-slate-600">œufs</span>
-                </div>
-              </div>
-
-              {/* Range Slider */}
-              <input
-                type="range"
-                min="500"
-                max="50000"
-                step="500"
-                value={Math.min(qty, 50000)}
-                onChange={e => setQty(Number(e.target.value))}
-                className="w-full accent-amber-500 cursor-pointer h-3 bg-slate-200 rounded-xl"
-              />
-
-              {/* Quick Presets */}
-              <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
-                <span className="text-xs text-slate-600 font-extrabold">Raccourcis Quantités Courantes :</span>
-                <div className="flex items-center flex-wrap gap-2">
-                  {[1500, 3000, 5000, 10000, 20000, 47000].map(preset => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setQty(preset)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black border transition-all ${
-                        qty === preset
-                          ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-xs'
-                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {preset.toLocaleString()} œufs
+                      <span className="font-mono font-black">{item.priceFardeau.toLocaleString()} F/fard.</span>
                     </button>
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Step 3: Total Result Display Box */}
-            <div className="p-6 md:p-8 bg-slate-900 text-white rounded-3xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl">
-              <div className="space-y-1 text-center lg:text-left">
-                <span className="text-xs font-extrabold text-amber-400 uppercase tracking-widest block">MONTANT TOTAL ESTIMÉ DE LA COMMANDE</span>
-                <div className="flex items-baseline justify-center lg:justify-start gap-2">
-                  <span className="text-4xl md:text-5xl font-black text-amber-400 font-display tracking-tight">
-                    {total.toLocaleString('fr-FR')}
-                  </span>
-                  <span className="text-xl font-black text-white font-display">FCFA</span>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    2. Quantité en Fardeaux
+                  </label>
+                  <span className="text-amber-400 font-extrabold text-sm">{quantiteFardeaux} Fardeaux</span>
                 </div>
-                <p className="text-xs text-slate-400 font-medium pt-1">
-                  Détail : {qty.toLocaleString()} œufs x {selProd.priceUnit} FCFA | Expédition & Livraison dans les 14 Régions du Sénégal
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                <button
-                  onClick={() => setShowOrderModal(true)}
-                  className="w-full sm:w-auto px-6 py-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all active:scale-95 border border-amber-600/30"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  <span>Commander Directement en Ligne</span>
-                </button>
-
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all active:scale-95"
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>Valider sur WhatsApp</span>
-                </a>
+                <input
+                  type="range"
+                  min="10"
+                  max="1000"
+                  step="10"
+                  value={quantiteFardeaux}
+                  onChange={(e) => setQuantiteFardeaux(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-700 rounded-lg"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span>10 fard. (1 000 pcs)</span>
+                  <span>100 fard. (-5%)</span>
+                  <span>300 fard. (-10%)</span>
+                  <span>500+ fard. (-15%)</span>
+                </div>
               </div>
             </div>
 
-          </div>
+            {/* Colonne Résultat du Devis */}
+            <div className="bg-slate-950 rounded-2xl p-6 border border-slate-800 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4">
+                  Estimation du Bon de Commande
+                </span>
 
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Format sélectionné :</span>
+                    <span className="font-bold text-white">{selectedFormat.title}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span>Nombre de fardeaux :</span>
+                    <span className="font-bold text-white">{quantiteFardeaux} fardeaux</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span>Quantité totale d'alvéoles :</span>
+                    <span className="font-bold text-indigo-400 text-sm">{totalAlveolesSimule.toLocaleString()} unités</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span>Montant Brut :</span>
+                    <span className="font-mono">{montantBrut.toLocaleString()} FCFA</span>
+                  </div>
+                  {remisePct > 0 && (
+                    <div className="flex justify-between text-emerald-400 font-semibold">
+                      <span>Remise Volume Spéciale ({remisePct}%) :</span>
+                      <span>-{montantRemise.toLocaleString()} FCFA</span>
+                    </div>
+                  )}
+
+                  <div className="pt-4 mt-2 border-t border-slate-800 flex justify-between items-baseline">
+                    <span className="text-sm font-bold text-white">Montant Total Net :</span>
+                    <span className="text-3xl font-black text-amber-400 tracking-tight">
+                      {montantNet.toLocaleString()}{' '}
+                      <span className="text-xs font-normal text-slate-400">FCFA</span>
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic mt-1">
+                    * Hors frais de transport éventuels selon la région de livraison.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-800">
+                <button
+                  onClick={() => setShowQuoteModal(true)}
+                  className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-4 h-4" />
+                  Valider ce Devis & Être Contacté
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ══ FARM PARTNERSHIP SECTION ═════════════════════════════════════════ */}
-      <section id="partenaires" className="py-20 z-10 relative">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="bg-white/95 border border-slate-200 rounded-3xl p-8 md:p-12 shadow-lg grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            <div className="lg:col-span-8 space-y-4">
-              <span className="text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-300 px-3 py-1 rounded-full uppercase">
-                ÉLEVEURS & POULAILLERS DE TOUTES LES RÉGIONS
-              </span>
-              <h2 className="text-2xl md:text-4xl font-black text-slate-900 font-display">
-                Devenez Ferme Partenaire BS Distribution
-              </h2>
-              <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed">
-                Vous possédez un poulailler au Sénégal (Dakar, Thiès, Kaolack, Saint-Louis, Diourbel...) ? Vendez toute votre production d'œufs en toute sérénité à BS Distribution avec paiement sécurisé et enlèvement régulier.
+      {/* Process Écologique & Recyclage */}
+      <section id="process" className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              Économie Circulaire
+            </span>
+            <h2 className="text-3xl font-black text-slate-950 mt-3">Le Processus de Pâte Moulée Écologique</h2>
+            <p className="text-sm text-slate-600 mt-2">
+              Comment nous transformons les vieux cartons sénégalais en emballages protecteurs rigides et biodégradables.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto font-black text-lg mb-4">
+                1
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Collecte & Tri OCC</h3>
+              <p className="text-xs text-slate-600 mt-2">
+                Récupération de balles de cartons recyclés auprès des entreprises et collecteurs locaux.
               </p>
             </div>
 
-            <div className="lg:col-span-4 text-center lg:text-right">
-              <button
-                onClick={() => setShowOrderModal(true)}
-                className="w-full sm:w-auto px-8 py-4 bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs rounded-2xl shadow-md transition-all active:scale-95"
-              >
-                Proposer Ma Ferme
-              </button>
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center mx-auto font-black text-lg mb-4">
+                2
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Pulpage & Brassage</h3>
+              <p className="text-xs text-slate-600 mt-2">
+                Défibrage mécanique dans l'eau avec liants végétaux sans produits chimiques toxiques.
+              </p>
             </div>
 
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+              <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center mx-auto font-black text-lg mb-4">
+                3
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Moulage sous Vide</h3>
+              <p className="text-xs text-slate-600 mt-2">
+                Aspiration précise sur moules d'alvéoles rotatifs pour un calibrage millimétrique.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto font-black text-lg mb-4">
+                4
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">Séchage & Cerclage</h3>
+              <p className="text-xs text-slate-600 mt-2">
+                Tunnel de séchage continu à 200°C et conditionnement sous fardeaux prêts pour chargement.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ══ FOOTER ═══════════════════════════════════════════════════════════ */}
-      <footer className="bg-slate-900 border-t border-slate-800 py-10 text-slate-400 text-xs z-10 relative">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* Footer */}
+      <footer id="contact" className="bg-slate-950 text-white py-12 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="BS Distribution" className="h-8 w-auto" />
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center">
+              <Factory className="w-5 h-5" />
+            </div>
             <div>
-              <p className="font-extrabold text-white text-sm font-display">BS DISTRIBUTION SUARL</p>
-              <p className="text-[10px] text-slate-500 font-medium">Vente, Logistique & Distribution Nationale d'Œufs — 14 Régions du Sénégal</p>
+              <span className="font-black text-base">BS ALVÉOLES SÉNÉGAL</span>
+              <p className="text-xs text-slate-400">Unité de Production d'Emballages en Pâte Moulée</p>
             </div>
           </div>
-          <div className="text-center sm:text-right space-y-1 text-[11px] font-medium">
-            <p>Téléphone / WhatsApp : <strong className="text-amber-400">+221 76 622 59 79</strong></p>
-            <p>© 2025 BS Distribution SUARL. Tous droits réservés.</p>
+
+          <div className="text-center md:text-right text-xs text-slate-400">
+            <p>Usine & Service Commercial : Dakar / Keur Massar / Régions</p>
+            <p className="text-slate-500 mt-1">© 2026 BS DISTRIBUTION SUARL • Tous droits réservés</p>
           </div>
         </div>
       </footer>
 
-      {/* Floating WhatsApp Button */}
-      {floatVisible && (
-        <div className="fixed bottom-6 right-6 z-[400]">
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95"
-          >
-            <Phone className="w-6 h-6" />
-          </a>
-        </div>
-      )}
+      {/* Modal Devis Rapide */}
+      {showQuoteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">Demande de Devis d'Alvéoles</h3>
+              <button onClick={() => setShowQuoteModal(false)} className="text-slate-400">✕</button>
+            </div>
 
-      {showOrderModal && (
-        <PublicPortalModal onClose={() => setShowOrderModal(false)} />
+            {quoteSuccess ? (
+              <div className="py-8 text-center space-y-3">
+                <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
+                <h4 className="font-bold text-slate-900 text-base">Demande envoyée avec succès !</h4>
+                <p className="text-xs text-slate-600">
+                  Notre équipe commerciale va vous rappeler sous 30 minutes avec votre bon de commande proforma.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSendQuote} className="mt-4 space-y-3">
+                <div className="p-3 bg-amber-50 rounded-xl text-xs text-amber-900 font-medium">
+                  {quantiteFardeaux} fardeaux de {selectedFormat.title} • Net : {montantNet.toLocaleString()} FCFA
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nom de la Ferme / Entreprise</label>
+                  <input
+                    type="text"
+                    required
+                    value={quoteData.nomFerme}
+                    onChange={e => setQuoteData({ ...quoteData, nomFerme: e.target.value })}
+                    placeholder="Ex: Ferme Avicole du Saloum"
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nom du Contact</label>
+                  <input
+                    type="text"
+                    required
+                    value={quoteData.contact}
+                    onChange={e => setQuoteData({ ...quoteData, contact: e.target.value })}
+                    placeholder="Votre nom"
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Téléphone WhatsApp / Appel</label>
+                  <input
+                    type="text"
+                    required
+                    value={quoteData.telephone}
+                    onChange={e => setQuoteData({ ...quoteData, telephone: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Région de Livraison</label>
+                  <select
+                    value={quoteData.region}
+                    onChange={e => setQuoteData({ ...quoteData, region: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200"
+                  >
+                    <option value="Thiès">Thiès</option>
+                    <option value="Dakar">Dakar</option>
+                    <option value="Diourbel">Diourbel</option>
+                    <option value="Fatick">Fatick</option>
+                    <option value="Kaolack">Kaolack</option>
+                    <option value="Saint-Louis">Saint-Louis</option>
+                    <option value="Autre Région">Autre Région</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuoteModal(false)}
+                    className="px-3 py-2 text-xs font-semibold text-slate-600"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg shadow-md"
+                  >
+                    Envoyer ma demande
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
