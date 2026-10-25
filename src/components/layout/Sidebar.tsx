@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Gauge, Boxes, ShoppingBag, 
   DollarSign, ShieldCheck, Factory, Building, ArrowLeft, FileText, X
 } from 'lucide-react';
+import { InstallPwaButton } from '../common/InstallPwaButton';
 
 export type ModuleTab = 
   | 'dashboard'
@@ -196,8 +197,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </nav>
 
-      {/* Bas de sidebar : Bouton retour vitrine / info session */}
+      {/* Bas de sidebar : Bouton retour vitrine / info session / install PWA */}
       <div className="p-4 border-t border-slate-800 space-y-2">
+        <InstallPwaButton className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-md transition-all active:scale-95" />
+
         {onBackToVitrine && (
           <button
             onClick={onBackToVitrine}

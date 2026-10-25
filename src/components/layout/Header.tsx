@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserRole, SystemNotification, User as UserType } from '../../types';
 import { Wifi, WifiOff, LogOut, Globe, Factory, Menu } from 'lucide-react';
 import { NotificationCenter } from '../common/NotificationCenter';
+import { InstallPwaButton } from '../common/InstallPwaButton';
 
 interface HeaderProps {
   currentUser: UserType | null;
@@ -65,15 +66,17 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Contrôles droits */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <InstallPwaButton compact={true} />
+
         {onOpenPublicPortal && (
           <button
             onClick={onOpenPublicPortal}
-            className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
+            className="px-2.5 sm:px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
             title="Ouvrir la Vitrine Publique et Catalogue"
           >
             <Globe className="w-3.5 h-3.5 text-amber-600" />
-            <span className="hidden sm:inline">Vitrine Publique</span>
+            <span className="hidden sm:inline">Vitrine</span>
           </button>
         )}
 

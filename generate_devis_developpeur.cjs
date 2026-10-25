@@ -101,9 +101,11 @@ doc.setFont('helvetica', 'bold');
 doc.setFontSize(8);
 doc.setTextColor(...textDark);
 doc.text('N DEVIS : DEV-DEV-2026-1025', 18, y + 5.5);
-doc.text('DATE : 25/10/2026', 75, y + 5.5);
-doc.text('DELAI : 3 a 4 Semaines', 120, y + 5.5);
-doc.text('VALIDITE : 30 Jours', 162, y + 5.5);
+doc.text('DATE : 25/10/2026', 72, y + 5.5);
+doc.setTextColor(217, 119, 6); // Ambre vif pour mettre en valeur le délai express
+doc.text('DELAI : 2 Semaines (14 Jours)', 114, y + 5.5);
+doc.setTextColor(...textDark);
+doc.text('VALIDITE : 30 Jours', 165, y + 5.5);
 
 // 4. Objet de la prestation
 y = 85;
@@ -146,37 +148,37 @@ doc.text('MODULE / PRESTATION DEVELOPPEMENT', 28, y + 4.8);
 doc.text('FONCTIONNALITES & LIVRABLES INCLUS', 78, y + 4.8);
 doc.text('MONTANT (FCFA)', 190, y + 4.8, { align: 'right' });
 
-// Les 5 Modules
+// Les 5 Modules pour un total de 700 000 FCFA
 const modules = [
   {
     num: '01',
     titre: 'Tableaux de Bord Executifs (Dashboard)',
     details: 'Supervision temps reel : production du jour vs objectif (50 000 alv.), TRS moyen, CA realise, jours autonomie carton et alertes usine avec graphiques interactifs.',
-    prix: '130 000'
+    prix: '140 000'
   },
   {
     num: '02',
     titre: 'Indicateurs de la Productivite (MES / TRS)',
     details: 'Suivi des shifts (Matin, Soir, Nuit), calcul automatique du TRS / OEE (Disponibilite, Performance, Qualite), cadences horaires (alv/h), rebuts et ratio carton/1k.',
-    prix: '150 000'
+    prix: '160 000'
   },
   {
     num: '03',
     titre: 'Gestion des Stocks & Matieres',
     details: 'Suivi matieres premieres (balles cartons OCC, papiers, liants) et produits finis (plateaux 30, boites 6/10/12 en fardeaux), alertes seuil critique et valorisation stock.',
-    prix: '130 000'
+    prix: '140 000'
   },
   {
     num: '04',
     titre: 'Gestion Commerciale & Facturation B2B',
     details: 'Repertoire clients avicoles (fermes, couvoirs, grossistes), prise de commandes en fardeaux, tarifs degressifs, generation de Factures et Bons de Livraison (BL) chauffeurs.',
-    prix: '120 000'
+    prix: '130 000'
   },
   {
     num: '05',
     titre: 'Comptabilite de Base & Finances',
     details: 'Journal des recettes clients, charges exploitation usine (gaz sechoir, energie, matieres), tresorerie multi-comptes (Banque, Caisse, Wave, OM) et Compte de Resultat P&L.',
-    prix: '120 000'
+    prix: '130 000'
   }
 ];
 
@@ -232,13 +234,15 @@ doc.setFontSize(7.5);
 doc.setTextColor(...primaryNavy);
 doc.text('ECHEANCIER & CONDITIONS DE REGLEMENT :', 18, y + 5.5);
 
+doc.setFont('helvetica', 'bold');
+doc.setTextColor(...accentAmber);
+doc.text('- Acompte exigible au demarrage (60%) : 420 000 FCFA', 18, y + 10.5);
+
 doc.setFont('helvetica', 'normal');
-doc.setFontSize(6.8);
 doc.setTextColor(...textDark);
-doc.text('- Acompte au demarrage du projet (40%) : 260 000 FCFA', 18, y + 10.5);
-doc.text('- Paiement a la livraison de la version test (40%) : 260 000 FCFA', 18, y + 15);
-doc.text('- Solde final apres formation et livraison (20%) : 130 000 FCFA', 18, y + 19.5);
-doc.text('- Reglement via Wave Business, Orange Money Pro, Virement Bancaire', 18, y + 24);
+doc.text('- Solde final payable a la livraison et recette (40%) : 280 000 FCFA', 18, y + 15);
+doc.text('- Delai d execution garanti : 2 Semaines (14 jours ouvres)', 18, y + 19.5);
+doc.text('- Reglement via : Wave Business, Orange Money Pro, Virement Bancaire', 18, y + 24);
 
 // Mention explicite Hébergement Exclu
 doc.setFont('helvetica', 'bold');
@@ -262,7 +266,7 @@ doc.setFont('helvetica', 'normal');
 doc.setFontSize(8);
 doc.setTextColor(...textDark);
 doc.text('Sous-Total Prestations :', totauxX + 4, y + 6.5);
-doc.text('650 000 FCFA', totauxX + totauxWidth - 4, y + 6.5, { align: 'right' });
+doc.text('700 000 FCFA', totauxX + totauxWidth - 4, y + 6.5, { align: 'right' });
 
 // Ligne Hébergement Serveur Exclu
 doc.text('Hebergement Serveur :', totauxX + 4, y + 12);
@@ -284,7 +288,7 @@ doc.setFont('helvetica', 'bold');
 doc.setFontSize(8.5);
 doc.text('TOTAL DU DEVIS :', totauxX + 4, y + 31);
 doc.setFontSize(11);
-doc.text('650 000 FCFA', totauxX + totauxWidth - 4, y + 31, { align: 'right' });
+doc.text('700 000 FCFA', totauxX + totauxWidth - 4, y + 31, { align: 'right' });
 
 // 7. Signatures et Validation
 y = 233;
@@ -311,7 +315,7 @@ doc.text('Ablaye SECK - Developpeur Logiciel', 18, y + 26);
 doc.setFont('helvetica', 'normal');
 doc.setFontSize(6.5);
 doc.setTextColor(...textMuted);
-doc.text('Dakar, Senegal - Validite 30 jours', 18, y + 31);
+doc.text('Dakar, Senegal - Delai d execution : 2 Semaines', 18, y + 31);
 
 // Bloc Client
 doc.roundedRect(110, y, 85, 38, 2, 2, 'D');
@@ -350,11 +354,11 @@ doc.text(
 );
 
 // Sauvegarde dans la racine et dans public/
-const outputPath = path.join(__dirname, 'DEVIS_DEVELOPPEMENT_LOGICIEL_650000_FCFA.pdf');
-const publicPath = path.join(__dirname, 'public', 'DEVIS_DEVELOPPEMENT_LOGICIEL_650000_FCFA.pdf');
+const outputPath = path.join(__dirname, 'DEVIS_DEVELOPPEMENT_LOGICIEL_700000_FCFA.pdf');
+const publicPath = path.join(__dirname, 'public', 'DEVIS_DEVELOPPEMENT_LOGICIEL_700000_FCFA.pdf');
 
 const pdfBytes = doc.output('arraybuffer');
 fs.writeFileSync(outputPath, Buffer.from(pdfBytes));
 fs.writeFileSync(publicPath, Buffer.from(pdfBytes));
 
-console.log(`Devis Developpeur genere avec succes : ${outputPath}`);
+console.log(`Devis Developpeur 700 000 FCFA genere avec succes : ${outputPath}`);
