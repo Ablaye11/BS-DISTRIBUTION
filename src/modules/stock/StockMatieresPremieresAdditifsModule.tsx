@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../db/database';
+import { db, syncOfficialAdditives } from '../../db/database';
 import { 
   RawMaterialStock, RawMaterialReceptionVoucher, RejectedRawMaterialRecord,
   StockMovement, IntrantStockMovement, MaterialExitRequest, ShiftType
@@ -19,6 +19,11 @@ import {
 
 export const StockMatieresPremieresAdditifsModule: React.FC = () => {
   const { currentTheme } = useTheme();
+
+  // Synchronisation automatique et auto-nettoyage des 6 additifs officiels
+  useEffect(() => {
+    syncOfficialAdditives();
+  }, []);
 
   // ─── Données réactives Dexie ──────────────────────────────────────────────
   const rawMaterials = useLiveQuery(() => db.rawMaterials.toArray()) || [];
@@ -1920,9 +1925,20 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
 
               {/* Statut et indicateur de l'additif sélectionné */}
               <div className="flex items-center gap-2 shrink-0">
-                <span className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold text-[11px] sm:text-xs flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await syncOfficialAdditives(true);
+                  }}
+                  className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-[11px] sm:text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Forcer l'actualisation des 6 additifs officiels"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Actualiser les 6 Additifs</span>
+                </button>
+                <span className="hidden sm:flex px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold text-[11px] sm:text-xs items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 shrink-0" />
-                  <span>Intrant Prêt pour Dosage Shuliy</span>
+                  <span>Intrant Prêt Dosage</span>
                 </span>
               </div>
             </div>

@@ -97,6 +97,151 @@ export class BSDistributionDatabase extends Dexie {
 
 export const db = new BSDistributionDatabase();
 
+export const OFFICIAL_ADDITIFS_LIST: RawMaterialStock[] = [
+  {
+    id: 'mp-eau-08',
+    reference: 'MP-EAU-PROCEDE',
+    nom: 'Eau de Procédé Industrielle (Circuit Pulpeur & Boucle Fermée Recyclage)',
+    categorie: 'EAU_ENERGIE',
+    estIntrant: true,
+    unite: 'm³',
+    stockActuel: 450,
+    seuilSecurite: 100,
+    coutMoyenAchatFCFA: 450,
+    fournisseurPrincipal: 'Forage Usine & Réseau SEN\'EAU',
+    emplacementStock: 'Château d\'eau & Bâche de Stockage Usine',
+    derniereReception: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: 'mp-akd-03',
+    reference: 'MP-AKD-HYDRO',
+    nom: 'AKD (Alkyl Ketene Dimer) — Encollage Hydrophobe Réactif (Great Uniontech)',
+    categorie: 'HYDROFUGE',
+    estIntrant: true,
+    unite: 'Kg',
+    stockActuel: 200, // Stock pré-commandé pour tests : 200 kg
+    seuilSecurite: 50,
+    coutMoyenAchatFCFA: 1850,
+    fournisseurPrincipal: 'Great Uniontech / Chimie Papetière Spécialisée',
+    emplacementStock: 'Magasin Additifs - Zone Produits d\'Encollage',
+    derniereReception: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: 'mp-amidon-cat-04',
+    reference: 'MP-AMIDON-CAT',
+    nom: 'Amidon Cationique Industriel (Cationic Starch for Papermaking — Partie Humide)',
+    categorie: 'LIANT_ADJUVANT',
+    estIntrant: true,
+    unite: 'Kg',
+    stockActuel: 500, // Stock pré-commandé pour tests : 500 kg
+    seuilSecurite: 100,
+    coutMoyenAchatFCFA: 650,
+    fournisseurPrincipal: 'Cationic Starch for Papermaking Co.',
+    emplacementStock: 'Silos Intrants Farineux & Liants',
+    derniereReception: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: 'mp-cmc-05',
+    reference: 'MP-CMC-ARSHINE',
+    nom: 'CMC (Carboxymethyl Cellulose) — Liant E466 (Arshine Pharmaceutical Co., Limited)',
+    categorie: 'LIANT_ADJUVANT',
+    estIntrant: true,
+    unite: 'Kg',
+    stockActuel: 100, // Stock pré-commandé pour tests : 100 kg
+    seuilSecurite: 25,
+    coutMoyenAchatFCFA: 1450,
+    fournisseurPrincipal: 'Arshine Pharmaceutical Co., Limited',
+    emplacementStock: 'Magasin Intrants Chimiques - Cuves A',
+    derniereReception: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: 'mp-talc-06',
+    reference: 'MP-TALC-IND',
+    nom: 'Talc Industriel (Silicate de Magnésium Hydraté — Charge & Lissage 3000 mesh)',
+    categorie: 'COLORANT',
+    estIntrant: true,
+    unite: 'Kg',
+    stockActuel: 500, // Stock pré-commandé pour tests : 500 kg
+    seuilSecurite: 100,
+    coutMoyenAchatFCFA: 520,
+    fournisseurPrincipal: 'Minéraux Techniques & Talcs Industriels (3000 mesh)',
+    emplacementStock: 'Zone Charges Minérales & Poudres',
+    derniereReception: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: 'mp-defoamer-07',
+    reference: 'MP-DEFOAMER-IND',
+    nom: 'Anti-Mousse Industriel Defoamer (Élimination Bulles & Mousse Pulpeur)',
+    categorie: 'LIANT_ADJUVANT',
+    estIntrant: true,
+    unite: 'Litre',
+    stockActuel: 25, // Stock pré-commandé pour tests : 25 L
+    seuilSecurite: 5,
+    coutMoyenAchatFCFA: 2500,
+    fournisseurPrincipal: 'Solutions Chimiques de Procédés Industriels',
+    emplacementStock: 'Magasin Additifs Chimiques - Fûts Spéciaux',
+    derniereReception: new Date().toISOString().split('T')[0]
+  }
+];
+
+/**
+ * Synchronisation garantie des 6 additifs officiels
+ * - Insère les additifs manquants avec leurs quantités pré-commandées
+ * - Met à jour les libellés officiels exacts
+ * - Supprime automatiquement les anciens additifs obsolètes (ex: MP-AMIDON-LIANT, MP-AGENT-HYDRO)
+ */
+export async function syncOfficialAdditives(force = false): Promise<void> {
+  try {
+    const syncKey = 'bs_additifs_officiels_v5_force';
+    const today = new Date().toISOString().split('T')[0];
+    const officialIds = OFFICIAL_ADDITIFS_LIST.map(a => a.id);
+
+    // Vérifier si les 6 existent déjà
+    const existingOfficialCount = await db.rawMaterials.where('id').anyOf(officialIds).count();
+    
+    if (!force && localStorage.getItem(syncKey) === 'true' && existingOfficialCount === 6) {
+      return;
+    }
+
+    // 1. Upsert des 6 additifs officiels
+    for (const additif of OFFICIAL_ADDITIFS_LIST) {
+      const existing = await db.rawMaterials.get(additif.id);
+      if (!existing) {
+        await db.rawMaterials.put({ ...additif, derniereReception: today });
+      } else {
+        await db.rawMaterials.update(additif.id, {
+          nom: additif.nom,
+          reference: additif.reference,
+          unite: additif.unite,
+          categorie: additif.categorie,
+          estIntrant: true,
+          fournisseurPrincipal: additif.fournisseurPrincipal,
+          emplacementStock: additif.emplacementStock,
+          stockActuel: (existing.stockActuel !== undefined && existing.stockActuel !== null) ? existing.stockActuel : additif.stockActuel,
+          seuilSecurite: existing.seuilSecurite || additif.seuilSecurite,
+          coutMoyenAchatFCFA: existing.coutMoyenAchatFCFA || additif.coutMoyenAchatFCFA
+        });
+      }
+    }
+
+    // 2. Nettoyage radical des anciens additifs obsolètes (MP-AMIDON-LIANT, MP-AGENT-HYDRO, etc.)
+    const allMaterials = await db.rawMaterials.toArray();
+    const preservedStandardIds = ['mp-occ-01', 'mp-jour-02', 'mp-cerclage-09'];
+
+    for (const mat of allMaterials) {
+      // Si ce n'est pas une matière carton/cerclage standard et pas l'un des 6 additifs officiels
+      if (!preservedStandardIds.includes(mat.id) && !officialIds.includes(mat.id)) {
+        await db.rawMaterials.delete(mat.id);
+      }
+    }
+
+    localStorage.setItem(syncKey, 'true');
+    console.info('✅ Synchronisation des 6 additifs officiels terminée avec succès.');
+  } catch (err) {
+    console.warn('Erreur lors de syncOfficialAdditives:', err);
+  }
+}
+
 /**
  * Initialisation des données industrielles pour l'unité de production d'alvéoles
  */
@@ -144,79 +289,9 @@ export async function seedInitialDataIfEmpty() {
     console.warn('Migration intrant movements:', e);
   }
 
-  // Synchronisation des 6 additifs officiels (PDF ADDITIFS) — Migration v3
+  // Synchronisation des 6 additifs officiels (PDF ADDITIFS) — Migration v5
   // Eau · AKD (Great Uniontech) · Amidon Cationique · CMC (Arshine) · Talc 3000 mesh · Anti-Mousse
-  try {
-    const syncTestAdditifsKey = 'bs_additifs_officiels_v3';
-    if (!localStorage.getItem(syncTestAdditifsKey)) {
-      const akd = await db.rawMaterials.get('mp-akd-03');
-      if (akd) {
-        await db.rawMaterials.update('mp-akd-03', {
-          stockActuel: 200,
-          seuilSecurite: 50,
-          coutMoyenAchatFCFA: akd.coutMoyenAchatFCFA || 1850,
-          unite: 'Kg',
-          nom: 'AKD (Alkyl Ketene Dimer) — Encollage Hydrophobe Réactif (Great Uniontech)'
-        });
-      }
-
-      const amidon = await db.rawMaterials.get('mp-amidon-cat-04');
-      if (amidon) {
-        await db.rawMaterials.update('mp-amidon-cat-04', {
-          stockActuel: 500,
-          seuilSecurite: 100,
-          coutMoyenAchatFCFA: amidon.coutMoyenAchatFCFA || 650,
-          unite: 'Kg',
-          nom: 'Amidon Cationique Industriel (Cationic Starch for Papermaking — Partie Humide)'
-        });
-      }
-
-      const cmc = await db.rawMaterials.get('mp-cmc-05');
-      if (cmc) {
-        await db.rawMaterials.update('mp-cmc-05', {
-          stockActuel: 100,
-          seuilSecurite: 25,
-          coutMoyenAchatFCFA: cmc.coutMoyenAchatFCFA || 1450,
-          unite: 'Kg',
-          nom: 'CMC (Carboxymethyl Cellulose) — Liant E466 (Arshine Pharmaceutical Co., Limited)'
-        });
-      }
-
-      const defoamer = await db.rawMaterials.get('mp-defoamer-07');
-      if (defoamer) {
-        await db.rawMaterials.update('mp-defoamer-07', {
-          stockActuel: 25,
-          seuilSecurite: 5,
-          coutMoyenAchatFCFA: defoamer.coutMoyenAchatFCFA || 2500,
-          unite: 'Litre',
-          nom: 'Anti-Mousse Industriel Defoamer (Élimination Bulles & Mousse Pulpeur)'
-        });
-      }
-
-      const talc = await db.rawMaterials.get('mp-talc-06');
-      if (talc) {
-        await db.rawMaterials.update('mp-talc-06', {
-          stockActuel: talc.stockActuel || 500,
-          seuilSecurite: 100,
-          coutMoyenAchatFCFA: talc.coutMoyenAchatFCFA || 520,
-          unite: 'Kg',
-          nom: 'Talc Industriel (Silicate de Magnésium Hydraté — Charge & Lissage 3000 mesh)'
-        });
-      }
-
-      const eau = await db.rawMaterials.get('mp-eau-08');
-      if (eau) {
-        await db.rawMaterials.update('mp-eau-08', {
-          nom: 'Eau de Procédé Industrielle (Circuit Pulpeur & Boucle Fermée Recyclage)',
-          coutMoyenAchatFCFA: eau.coutMoyenAchatFCFA || 450
-        });
-      }
-
-      localStorage.setItem(syncTestAdditifsKey, 'true');
-    }
-  } catch (err) {
-    console.warn('Sync additifs officiels v3:', err);
-  }
+  await syncOfficialAdditives();
 
   const count = await db.alveoleProducts.count();
   if (count > 0) {
