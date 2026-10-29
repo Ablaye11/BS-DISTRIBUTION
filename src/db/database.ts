@@ -144,10 +144,10 @@ export async function seedInitialDataIfEmpty() {
     console.warn('Migration intrant movements:', e);
   }
 
-  // Synchronisation des quantités pré-commandées pour la phase de tests :
-  // Amidon : 500 kg, AKD : 200 kg, CMC : 100 kg, Anti-mousse : 25 L
+  // Synchronisation des 6 additifs officiels (PDF ADDITIFS) — Migration v3
+  // Eau · AKD (Great Uniontech) · Amidon Cationique · CMC (Arshine) · Talc 3000 mesh · Anti-Mousse
   try {
-    const syncTestAdditifsKey = 'bs_additifs_precommandes_tests_v2';
+    const syncTestAdditifsKey = 'bs_additifs_officiels_v3';
     if (!localStorage.getItem(syncTestAdditifsKey)) {
       const akd = await db.rawMaterials.get('mp-akd-03');
       if (akd) {
@@ -156,7 +156,7 @@ export async function seedInitialDataIfEmpty() {
           seuilSecurite: 50,
           coutMoyenAchatFCFA: akd.coutMoyenAchatFCFA || 1850,
           unite: 'Kg',
-          nom: 'AKD (Alkyl Ketene Dimer) — Encollage Hydrophobe'
+          nom: 'AKD (Alkyl Ketene Dimer) — Encollage Hydrophobe Réactif (Great Uniontech)'
         });
       }
 
@@ -167,7 +167,7 @@ export async function seedInitialDataIfEmpty() {
           seuilSecurite: 100,
           coutMoyenAchatFCFA: amidon.coutMoyenAchatFCFA || 650,
           unite: 'Kg',
-          nom: 'Amidon (Starch) — Liant Résistance & Rétention'
+          nom: 'Amidon Cationique Industriel (Cationic Starch for Papermaking — Partie Humide)'
         });
       }
 
@@ -178,7 +178,7 @@ export async function seedInitialDataIfEmpty() {
           seuilSecurite: 25,
           coutMoyenAchatFCFA: cmc.coutMoyenAchatFCFA || 1450,
           unite: 'Kg',
-          nom: 'CMC (Carboxyméthylcellulose) — Liant Mécanique E466'
+          nom: 'CMC (Carboxymethyl Cellulose) — Liant E466 (Arshine Pharmaceutical Co., Limited)'
         });
       }
 
@@ -189,16 +189,34 @@ export async function seedInitialDataIfEmpty() {
           seuilSecurite: 5,
           coutMoyenAchatFCFA: defoamer.coutMoyenAchatFCFA || 2500,
           unite: 'Litre',
-          nom: 'Anti-Mousse (Defoamer) — Contrôle Mousse Pulpeur'
+          nom: 'Anti-Mousse Industriel Defoamer (Élimination Bulles & Mousse Pulpeur)'
+        });
+      }
+
+      const talc = await db.rawMaterials.get('mp-talc-06');
+      if (talc) {
+        await db.rawMaterials.update('mp-talc-06', {
+          stockActuel: talc.stockActuel || 500,
+          seuilSecurite: 100,
+          coutMoyenAchatFCFA: talc.coutMoyenAchatFCFA || 520,
+          unite: 'Kg',
+          nom: 'Talc Industriel (Silicate de Magnésium Hydraté — Charge & Lissage 3000 mesh)'
+        });
+      }
+
+      const eau = await db.rawMaterials.get('mp-eau-08');
+      if (eau) {
+        await db.rawMaterials.update('mp-eau-08', {
+          nom: 'Eau de Procédé Industrielle (Circuit Pulpeur & Boucle Fermée Recyclage)',
+          coutMoyenAchatFCFA: eau.coutMoyenAchatFCFA || 450
         });
       }
 
       localStorage.setItem(syncTestAdditifsKey, 'true');
     }
   } catch (err) {
-    console.warn('Sync additifs tests:', err);
+    console.warn('Sync additifs officiels v3:', err);
   }
-
 
   const count = await db.alveoleProducts.count();
   if (count > 0) {

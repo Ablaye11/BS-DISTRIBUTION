@@ -1720,10 +1720,10 @@ export const StockAlveolesModule: React.FC = () => {
                   <span className="text-xs text-purple-700 font-bold">• Seuil d'Alerte 25%</span>
                 </div>
                 <h2 className="text-base sm:text-lg font-black text-slate-900">
-                  1. AKD (Alkyl Ketene Dimer) • 2. Amidon Cationique • 3. CMC • 4. Talc Industriel • 5. Anti-Mousse Defoamer
+                  1. Eau de Procédé • 2. AKD (Alkyl Ketene Dimer) • 3. Amidon Cationique • 4. CMC • 5. Talc Industriel • 6. Anti-Mousse Defoamer
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Gestion de stock stricte des 5 additifs de formulation de pâte moulée. Alerte de réapprovisionnement automatique dès franchissement du seuil critique de 25% du stock.
+                  Gestion de stock stricte des 6 additifs officiels de formulation de pâte moulée. Alerte de réapprovisionnement automatique dès franchissement du seuil critique de 25% du stock.
                 </p>
               </div>
             </div>

@@ -245,8 +245,29 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
   }, 0);
 
   // ─── Calculs Additifs Chimiques ───────────────────────────────────────────
-  const listeAdditifs = rawMaterials.filter(m => m.categorie !== 'PAPIER_CARTON');
+  // Ordre officiel PDF : 1.Eau 2.AKD 3.Amidon cationique 4.CMC 5.Talc 6.Anti-mousse
+  const ADDITIFS_ORDER = ['mp-eau-08', 'mp-akd-03', 'mp-amidon-cat-04', 'mp-cmc-05', 'mp-talc-06', 'mp-defoamer-07'];
+  const listeAdditifs = rawMaterials
+    .filter(m => m.categorie !== 'PAPIER_CARTON' && m.categorie !== 'EMBALLAGE_CERCLAGE')
+    .sort((a, b) => {
+      const ia = ADDITIFS_ORDER.indexOf(a.id);
+      const ib = ADDITIFS_ORDER.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
   const currentAdditif = listeAdditifs.find(a => a.id === selectedAdditifId) || listeAdditifs[0];
+
+  // Noms courts officiels pour affichage numéroté
+  const ADDITIF_LABEL: Record<string, string> = {
+    'mp-eau-08': '1. Eau de Procédé (m³)',
+    'mp-akd-03': '2. AKD (Alkyl Ketene Dimer) (kg)',
+    'mp-amidon-cat-04': '3. Amidon Cationique Industriel (kg)',
+    'mp-cmc-05': '4. CMC (Carboxymethyl Cellulose) (kg)',
+    'mp-talc-06': '5. Talc Industriel 3000 mesh (kg)',
+    'mp-defoamer-07': '6. Anti-mousse Industriel / Defoamer (L)',
+  };
 
   // Synthèse globale de tous les additifs
   const valeurGlobaleTousAdditifsFCFA = listeAdditifs.reduce((sum, a) => sum + (a.stockActuel * (a.coutMoyenAchatFCFA || 650)), 0);
@@ -1890,7 +1911,7 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                   >
                     {listeAdditifs.map(a => (
                       <option key={a.id} value={a.id}>
-                        {a.nom} — Stock : {a.stockActuel} {a.uniteMesure} (PMP: {a.coutMoyenAchatFCFA || 650} FCFA)
+                        {ADDITIF_LABEL[a.id] || a.nom} — Stock : {a.stockActuel} {a.uniteMesure || a.unite} (PMP: {(a.coutMoyenAchatFCFA || 650).toLocaleString()} FCFA)
                       </option>
                     ))}
                   </select>
@@ -1967,21 +1988,24 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3">
-              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3">
+
+              {/* 1. Eau de Procédé */}
+              <div className="p-3 bg-white rounded-2xl border border-blue-200 shadow-xs flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Amidon (Starch)</span>
-                  <div className="text-lg font-black text-slate-900 mt-0.5">500 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                  <span className="text-[10px] font-bold text-blue-600 uppercase">1. Eau de Procédé</span>
+                  <div className="text-sm font-black text-slate-900 mt-0.5">Circuit Pulpeur<br/><span className="text-[10px] text-slate-400">Boucle Fermée</span></div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-indigo-700">650 F/kg</span>
-                  <span className="text-[10px] text-slate-400">Liant</span>
+                  <span className="text-[11px] font-bold text-blue-700">450 F/m³</span>
+                  <span className="text-[10px] text-slate-400">Procédé</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              {/* 2. AKD */}
+              <div className="p-3 bg-white rounded-2xl border border-indigo-200 shadow-xs flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">AKD</span>
+                  <span className="text-[10px] font-bold text-indigo-600 uppercase">2. AKD (Alkyl Ketene Dimer)</span>
                   <div className="text-lg font-black text-slate-900 mt-0.5">200 <span className="text-xs font-bold text-slate-500">kg</span></div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
@@ -1990,27 +2014,54 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+              {/* 3. Amidon Cationique */}
+              <div className="p-3 bg-white rounded-2xl border border-emerald-200 shadow-xs flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">CMC</span>
-                  <div className="text-lg font-black text-slate-900 mt-0.5">100 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase">3. Amidon Cationique</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">500 <span className="text-xs font-bold text-slate-500">kg</span></div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-indigo-700">1 450 F/kg</span>
-                  <span className="text-[10px] text-slate-400">Rétention</span>
+                  <span className="text-[11px] font-bold text-emerald-700">650 F/kg</span>
+                  <span className="text-[10px] text-slate-400">Liant</span>
                 </div>
               </div>
 
+              {/* 4. CMC */}
+              <div className="p-3 bg-white rounded-2xl border border-violet-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-violet-600 uppercase">4. CMC (Carboxymethyl Cellulose)</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">100 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-violet-700">1 450 F/kg</span>
+                  <span className="text-[10px] text-slate-400">Rétention E466</span>
+                </div>
+              </div>
+
+              {/* 5. Talc Industriel */}
               <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Anti-mousse (Defoamer)</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">5. Talc Industriel (3000 mesh)</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">500 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-600">520 F/kg</span>
+                  <span className="text-[10px] text-slate-400">Charge</span>
+                </div>
+              </div>
+
+              {/* 6. Anti-mousse */}
+              <div className="p-3 bg-white rounded-2xl border border-rose-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-rose-600 uppercase">6. Anti-mousse Industriel</span>
                   <div className="text-lg font-black text-slate-900 mt-0.5">25 <span className="text-xs font-bold text-slate-500">L</span></div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-indigo-700">2 500 F/L</span>
+                  <span className="text-[11px] font-bold text-rose-700">2 500 F/L</span>
                   <span className="text-[10px] text-slate-400">Anti-bulle</span>
                 </div>
               </div>
+
             </div>
           </div>
 
@@ -2063,10 +2114,10 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                   Page 2 & 4 du Schéma Directeur Usine
                 </div>
                 <h3 className="text-base font-black text-slate-900">
-                  Les 5 Additifs Chimiques Réglementaires & Seuil d'Alerte 25%
+                  Les 6 Additifs Officiels (Schéma Directeur Usine) & Seuil d'Alerte 25%
                 </h3>
                 <p className="text-xs text-slate-500">
-                  AKD, Amidon Cationique, CMC, Talc & Anti-Mousse • Détermination du coût unitaire & alerte de réapprovisionnement à 25%
+                  1. Eau de Procédé • 2. AKD • 3. Amidon Cationique • 4. CMC • 5. Talc Industriel • 6. Anti-Mousse Defoamer — Coût unitaire & réapprovisionnement à 25%
                 </p>
               </div>
             </div>
@@ -2106,14 +2157,15 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                               {idx + 1}
                             </span>
                             <div>
-                              <strong className="text-slate-900 block text-xs">{a.nom}</strong>
+                              <strong className="text-slate-900 block text-xs">{ADDITIF_LABEL[a.id] || a.nom}</strong>
                               <span className="text-[10px] text-slate-400">
-                                {a.nom.toLowerCase().includes('amidon') ? 'Rétention des fibres et rigidité' :
-                                 a.nom.toLowerCase().includes('akd') ? 'Agent hydrophobe & étanchéité alvéoles' :
-                                 a.nom.toLowerCase().includes('cmc') ? 'Liant, rétention & stabilisant E466' :
-                                 a.nom.toLowerCase().includes('talc') ? 'Charge minérale, opacité & lissage' :
-                                 a.nom.toLowerCase().includes('defoamer') || a.nom.toLowerCase().includes('mousse') ? 'Élimination des bulles et aération pâte' :
-                                 'Additif de renfort mécanique'}
+                                {a.id === 'mp-eau-08' ? 'Circuit pulpeur & boucle fermée recyclage' :
+                                 a.id === 'mp-akd-03' ? 'Agent hydrophobe & imperméabilisation alvéoles (Great Uniontech)' :
+                                 a.id === 'mp-amidon-cat-04' ? 'Rétention fibres & résistance humide (Cationic Starch for Papermaking)' :
+                                 a.id === 'mp-cmc-05' ? 'Éther de cellulose anionique, liant E466 (Arshine Pharmaceutical)' :
+                                 a.id === 'mp-talc-06' ? 'Silicate de magnésium hydraté, charge & lissage 3000 mesh' :
+                                 a.id === 'mp-defoamer-07' ? 'Réduit tension superficielle & élimine mousse pulpeur' :
+                                 'Additif de procédé'}
                               </span>
                             </div>
                           </div>
@@ -3449,13 +3501,28 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900">Entrée Achat Additif Chimique</h3>
-                  <p className="text-xs text-slate-500">{currentAdditif.nom} ({currentAdditif.reference})</p>
+                  <p className="text-xs text-slate-500">{ADDITIF_LABEL[currentAdditif.id] || currentAdditif.nom}</p>
                 </div>
               </div>
               <button onClick={() => setShowAdditifEntreeModal(false)} className="text-slate-400 p-2">✕</button>
             </div>
 
             <form onSubmit={handleSaveAdditifEntree} className="mt-4 space-y-4">
+              {/* Sélecteur d'additif dans le modal */}
+              <div>
+                <label className="block text-[11px] font-black text-indigo-700 uppercase tracking-wider mb-1">Additif à réceptionner</label>
+                <select
+                  value={selectedAdditifId}
+                  onChange={e => setSelectedAdditifId(e.target.value)}
+                  className="w-full text-xs font-black text-slate-900 bg-indigo-50 border-2 border-indigo-300 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                >
+                  {listeAdditifs.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {ADDITIF_LABEL[a.id] || a.nom} — Stock actuel : {a.stockActuel} {a.uniteMesure || a.unite}
+                    </option>
+                  ))}
+                </select>
+              </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -3569,10 +3636,26 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900">Demande d'Expression de Besoin & Bon de Sortie Additif</h3>
-                  <p className="text-xs text-slate-500">{currentAdditif.nom} (Dosage Cuve Homogénéisation)</p>
+                  <p className="text-xs text-slate-500">{ADDITIF_LABEL[currentAdditif.id] || currentAdditif.nom} (Dosage Cuve Homogénéisation)</p>
                 </div>
               </div>
               <button onClick={() => setShowAdditifSortieModal(false)} className="text-slate-400 hover:text-slate-600 p-2">✕</button>
+            </div>
+
+            {/* Sélecteur d'additif dans le modal Sortie */}
+            <div className="mt-4">
+              <label className="block text-[11px] font-black text-amber-700 uppercase tracking-wider mb-1">Additif à doser / sortir</label>
+              <select
+                value={selectedAdditifId}
+                onChange={e => setSelectedAdditifId(e.target.value)}
+                className="w-full text-xs font-black text-slate-900 bg-amber-50 border-2 border-amber-300 rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+              >
+                {listeAdditifs.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {ADDITIF_LABEL[a.id] || a.nom} — Dispo : {a.stockActuel} {a.uniteMesure || a.unite}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Directive Officielle */}
