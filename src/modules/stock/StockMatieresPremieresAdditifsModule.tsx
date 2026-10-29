@@ -151,9 +151,12 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
   });
 
   // ─── Module Déroulant ADDITIFS CHIMIQUES ──────────────────────────────────
-  const [selectedAdditifId, setSelectedAdditifId] = useState<string>('mp-amidon-01');
+  const [selectedAdditifId, setSelectedAdditifId] = useState<string>('mp-amidon-cat-04');
   const [showAdditifEntreeModal, setShowAdditifEntreeModal] = useState(false);
   const [showAdditifSortieModal, setShowAdditifSortieModal] = useState(false);
+  const [editingPriceAdditif, setEditingPriceAdditif] = useState<RawMaterialStock | null>(null);
+  const [newPriceValue, setNewPriceValue] = useState<number>(650);
+  const [motifPriceChange, setMotifPriceChange] = useState<string>('Ajustement coût officiel');
 
   // Formulaire Entrée Additif
   const [additifEntreeForm, setAdditifEntreeForm] = useState({
@@ -1918,8 +1921,21 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 font-bold block">Coût Moyen Achat (PMP) :</span>
-                  <strong className="text-slate-900 text-sm">{currentAdditif.coutMoyenAchatFCFA || 650} FCFA</strong>
-                  <span className="text-[10px] text-slate-500 block mt-0.5">par {currentAdditif.uniteMesure}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <strong className="text-slate-900 text-sm">{currentAdditif.coutMoyenAchatFCFA || 650} FCFA</strong>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPriceAdditif(currentAdditif);
+                        setNewPriceValue(currentAdditif.coutMoyenAchatFCFA || 650);
+                      }}
+                      className="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg text-[10px] font-bold transition-colors"
+                      title="Modifier manuellement le prix unitaire"
+                    >
+                      ✏️ Modifier
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">par {currentAdditif.uniteMesure || currentAdditif.unite || 'Kg'}</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 font-bold block">Valeur en Stock de cet Additif :</span>
@@ -1932,6 +1948,70 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* BANNIÈRE SPÉCIALE : LOTS D'ADDITIFS PRÉ-COMMANDÉS POUR TESTS USINE */}
+          <div className="bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-emerald-500/10 border-2 border-amber-300 rounded-3xl p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200/60">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900">Additifs Pré-Commandés pour Tests Usine</h4>
+                  <p className="text-[11px] text-slate-600">Quantités validées pour essais de fabrication • Prix unitaires modifiables manuellement</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-black self-start sm:self-auto">
+                Phase de Tests Prêts
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3">
+              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Amidon (Starch)</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">500 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-700">650 F/kg</span>
+                  <span className="text-[10px] text-slate-400">Liant</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">AKD</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">200 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-700">1 850 F/kg</span>
+                  <span className="text-[10px] text-slate-400">Hydrofuge</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">CMC</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">100 <span className="text-xs font-bold text-slate-500">kg</span></div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-700">1 450 F/kg</span>
+                  <span className="text-[10px] text-slate-400">Rétention</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Anti-mousse (Defoamer)</span>
+                  <div className="text-lg font-black text-slate-900 mt-0.5">25 <span className="text-xs font-bold text-slate-500">L</span></div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-700">2 500 F/L</span>
+                  <span className="text-[10px] text-slate-400">Anti-bulle</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* TABLEAU DE BORD EXPLICATIF DES ADDITIFS (Demande explicite du client) */}
@@ -2050,8 +2130,22 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                         <td className="py-3.5 px-4 text-center text-slate-500 font-bold">
                           {a.seuilSecurite} {a.uniteMesure}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-bold text-slate-700">
-                          {pmp.toLocaleString()} FCFA
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="font-bold text-slate-800">{pmp.toLocaleString()} FCFA</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingPriceAdditif(a);
+                                setNewPriceValue(a.coutMoyenAchatFCFA || 650);
+                              }}
+                              className="px-1.5 py-0.5 bg-slate-100 hover:bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold"
+                              title="Corriger le coût unitaire"
+                            >
+                              ✏️
+                            </button>
+                          </div>
                         </td>
                         <td className="py-3.5 px-4 text-right font-black text-emerald-700 text-sm">
                           {valeur.toLocaleString()} FCFA
@@ -3641,6 +3735,107 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                 </button>
               </div>
 
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL 6 : MODIFICATION DU PRIX UNITAIRE ADDITIF (SAISIE MANUELLE)
+          ══════════════════════════════════════════════════════════════════════ */}
+      {editingPriceAdditif && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto overscroll-contain animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 font-black">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Ajuster le Coût Unitaire</h3>
+                  <p className="text-xs text-slate-500">{editingPriceAdditif.nom}</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingPriceAdditif(null)} className="text-slate-400 p-2">✕</button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await db.rawMaterials.update(editingPriceAdditif.id, {
+                  coutMoyenAchatFCFA: Number(newPriceValue)
+                });
+                await db.auditLogs.add({
+                  id: `audit-price-${Date.now()}`,
+                  timestamp: new Date().toISOString(),
+                  userNom: 'Direction Usine',
+                  userRole: 'RESPONSABLE_STOCK',
+                  action: 'MODIFICATION_PRIX_ADDITIF',
+                  entite: 'STOCK_ADDITIFS',
+                  description: `Mise à jour manuelle du coût unitaire de ${editingPriceAdditif.nom} à ${newPriceValue} FCFA / ${editingPriceAdditif.uniteMesure || 'kg'}. Motif : ${motifPriceChange || 'Ajustement coût officiel'}`
+                });
+                setEditingPriceAdditif(null);
+              }}
+              className="mt-4 space-y-4"
+            >
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900">
+                <strong>Saisie manuelle :</strong> Vous pouvez renseigner et ajuster le coût unitaire dès que les coûts officiels sont disponibles. La valeur du stock sera mise à jour automatiquement.
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nouveau Coût Unitaire (FCFA / {editingPriceAdditif.uniteMesure || editingPriceAdditif.unite || 'Kg'}) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={newPriceValue}
+                  onChange={e => setNewPriceValue(Number(e.target.value))}
+                  className="w-full text-sm font-black p-2.5 rounded-xl border border-indigo-300 focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Motif / Référence de la facture
+                </label>
+                <input
+                  type="text"
+                  value={motifPriceChange}
+                  onChange={e => setMotifPriceChange(e.target.value)}
+                  placeholder="Ex: Facture définitive fournisseur reçue"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300"
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500">Stock pré-commandé / actuel :</span>
+                  <strong className="text-slate-900">{editingPriceAdditif.stockActuel} {editingPriceAdditif.uniteMesure || editingPriceAdditif.unite || 'Kg'}</strong>
+                </div>
+                <div className="flex justify-between py-1 border-t border-slate-100 mt-1 pt-1">
+                  <span className="text-slate-500">Nouvelle valeur en stock :</span>
+                  <strong className="text-emerald-700 font-black">{((editingPriceAdditif.stockActuel) * (newPriceValue || 0)).toLocaleString()} FCFA</strong>
+                </div>
+              </div>
+
+              <div className="sticky bottom-0 bg-white/95 backdrop-blur-md pt-3 pb-4 sm:pb-2 border-t border-slate-100 flex items-center justify-end gap-2 z-20 mt-auto">
+                <button
+                  type="button"
+                  onClick={() => setEditingPriceAdditif(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-md"
+                >
+                  Valider le Prix Officiel
+                </button>
+              </div>
             </form>
           </div>
         </div>

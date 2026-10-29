@@ -144,6 +144,61 @@ export async function seedInitialDataIfEmpty() {
     console.warn('Migration intrant movements:', e);
   }
 
+  // Synchronisation des quantités pré-commandées pour la phase de tests :
+  // Amidon : 500 kg, AKD : 200 kg, CMC : 100 kg, Anti-mousse : 25 L
+  try {
+    const syncTestAdditifsKey = 'bs_additifs_precommandes_tests_v2';
+    if (!localStorage.getItem(syncTestAdditifsKey)) {
+      const akd = await db.rawMaterials.get('mp-akd-03');
+      if (akd) {
+        await db.rawMaterials.update('mp-akd-03', {
+          stockActuel: 200,
+          seuilSecurite: 50,
+          coutMoyenAchatFCFA: akd.coutMoyenAchatFCFA || 1850,
+          unite: 'Kg',
+          nom: 'AKD (Alkyl Ketene Dimer) — Encollage Hydrophobe'
+        });
+      }
+
+      const amidon = await db.rawMaterials.get('mp-amidon-cat-04');
+      if (amidon) {
+        await db.rawMaterials.update('mp-amidon-cat-04', {
+          stockActuel: 500,
+          seuilSecurite: 100,
+          coutMoyenAchatFCFA: amidon.coutMoyenAchatFCFA || 650,
+          unite: 'Kg',
+          nom: 'Amidon (Starch) — Liant Résistance & Rétention'
+        });
+      }
+
+      const cmc = await db.rawMaterials.get('mp-cmc-05');
+      if (cmc) {
+        await db.rawMaterials.update('mp-cmc-05', {
+          stockActuel: 100,
+          seuilSecurite: 25,
+          coutMoyenAchatFCFA: cmc.coutMoyenAchatFCFA || 1450,
+          unite: 'Kg',
+          nom: 'CMC (Carboxyméthylcellulose) — Liant Mécanique E466'
+        });
+      }
+
+      const defoamer = await db.rawMaterials.get('mp-defoamer-07');
+      if (defoamer) {
+        await db.rawMaterials.update('mp-defoamer-07', {
+          stockActuel: 25,
+          seuilSecurite: 5,
+          coutMoyenAchatFCFA: defoamer.coutMoyenAchatFCFA || 2500,
+          unite: 'Litre',
+          nom: 'Anti-Mousse (Defoamer) — Contrôle Mousse Pulpeur'
+        });
+      }
+
+      localStorage.setItem(syncTestAdditifsKey, 'true');
+    }
+  } catch (err) {
+    console.warn('Sync additifs tests:', err);
+  }
+
 
   const count = await db.alveoleProducts.count();
   if (count > 0) {
@@ -289,13 +344,13 @@ export async function seedInitialDataIfEmpty() {
     {
       id: 'mp-akd-03',
       reference: 'MP-AKD-HYDRO',
-      nom: 'AKD (Alkyl Ketene Dimer) - Agent d\'Encollage Hydrophobe Réactif',
+      nom: 'AKD (Alkyl Ketene Dimer) — Encollage Hydrophobe',
       categorie: 'HYDROFUGE',
       estIntrant: true,
       unite: 'Kg',
-      stockActuel: 650,
-      seuilSecurite: 250,
-      coutMoyenAchatFCFA: 1850,
+      stockActuel: 200, // Quantité pré-commandée pour tests : 200 kg
+      seuilSecurite: 50,
+      coutMoyenAchatFCFA: 1850, // Prix indicatif modifiable manuellement
       fournisseurPrincipal: 'Chimie Spécialités Papetières International',
       emplacementStock: 'Magasin Additifs - Zone Produits d\'Encollage',
       derniereReception: today
@@ -303,13 +358,13 @@ export async function seedInitialDataIfEmpty() {
     {
       id: 'mp-amidon-cat-04',
       reference: 'MP-AMIDON-CAT',
-      nom: 'Amidon Cationique Industriel (Partie Humide / Rétention Fibres)',
+      nom: 'Amidon (Starch) — Liant Résistance & Rétention',
       categorie: 'LIANT_ADJUVANT',
       estIntrant: true,
       unite: 'Kg',
-      stockActuel: 1200,
-      seuilSecurite: 400,
-      coutMoyenAchatFCFA: 850,
+      stockActuel: 500, // Quantité pré-commandée pour tests : 500 kg
+      seuilSecurite: 100,
+      coutMoyenAchatFCFA: 650, // Prix indicatif modifiable manuellement
       fournisseurPrincipal: 'Cationic Starch for Papermaking Co.',
       emplacementStock: 'Silos Intrants Farineux & Liants',
       derniereReception: today
@@ -317,13 +372,13 @@ export async function seedInitialDataIfEmpty() {
     {
       id: 'mp-cmc-05',
       reference: 'MP-CMC-ARSHINE',
-      nom: 'CMC (Carboxymethyl Cellulose) - Rétention, Stabilisant & Liant E466',
+      nom: 'CMC (Carboxyméthylcellulose) — Liant Mécanique E466',
       categorie: 'LIANT_ADJUVANT',
       estIntrant: true,
       unite: 'Kg',
-      stockActuel: 850,
-      seuilSecurite: 300,
-      coutMoyenAchatFCFA: 1450,
+      stockActuel: 100, // Quantité pré-commandée pour tests : 100 kg
+      seuilSecurite: 25,
+      coutMoyenAchatFCFA: 1450, // Prix indicatif modifiable manuellement
       fournisseurPrincipal: 'Arshine Pharmaceutical Co., Limited',
       emplacementStock: 'Magasin Intrants Chimiques - Cuves A',
       derniereReception: today
@@ -345,13 +400,13 @@ export async function seedInitialDataIfEmpty() {
     {
       id: 'mp-defoamer-07',
       reference: 'MP-DEFOAMER-IND',
-      nom: 'Anti-Mousse Industriel (Defoamer / Élimination Bulles & Mousse)',
+      nom: 'Anti-Mousse (Defoamer) — Contrôle Mousse Pulpeur',
       categorie: 'LIANT_ADJUVANT',
       estIntrant: true,
       unite: 'Litre',
-      stockActuel: 320,
-      seuilSecurite: 120,
-      coutMoyenAchatFCFA: 2200,
+      stockActuel: 25, // Quantité pré-commandée pour tests : 25 Litres
+      seuilSecurite: 5,
+      coutMoyenAchatFCFA: 2500, // Prix indicatif modifiable manuellement
       fournisseurPrincipal: 'Solutions Chimiques de Procédés Industriels',
       emplacementStock: 'Magasin Additifs Chimiques - Fûts Spéciaux',
       derniereReception: today
