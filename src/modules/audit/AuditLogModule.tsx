@@ -160,7 +160,7 @@ export const AuditLogModule: React.FC<AuditLogModuleProps> = ({ auditLogs }) => 
 
         {/* ── DESKTOP VIEW: Full Table ─────────────────────────────────── */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-left border-collapse text-xs min-w-[700px]">
             <thead>
               <tr className="bg-slate-50 text-slate-600 border-b border-slate-200">
                 <th className="p-3">Horodatage</th>

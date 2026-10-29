@@ -1,222 +1,280 @@
 import React from 'react';
 import { UserRole } from '../../types';
-import { 
-  LayoutDashboard, Gauge, Boxes, ShoppingBag, 
-  DollarSign, ShieldCheck, Factory, Building, ArrowLeft, FileText, X
+import {
+  LayoutDashboard, Gauge, Boxes, ShoppingBag,
+  DollarSign, ShieldCheck, FileText, X, Smartphone, ClipboardCheck,
+  Users, Sliders, BookOpen, PackageCheck
 } from 'lucide-react';
-import { InstallPwaButton } from '../common/InstallPwaButton';
 import { useTheme } from '../../context/ThemeContext';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import { InstallPwaButton } from '../common/InstallPwaButton';
 
-export type ModuleTab = 
+export type ModuleTab =
   | 'dashboard'
-  | 'productivite'
   | 'stock'
+  | 'productivite'
+  | 'produits_finis'
   | 'commercial'
   | 'finances'
-  | 'audit_logs'
-  | 'cahier_charges';
+  | 'inventaire'
+  | 'cahier_charges'
+  | 'users'
+  | 'parametres'
+  | 'audit_logs';
+
+
+interface NavItem {
+  id: ModuleTab;
+  label: string;
+  sublabel: string;
+  icon: React.ElementType;
+  roles: UserRole[];
+  color: string;      // couleur de l'icône inactive
+  dot?: string;       // petit badge coloré
+}
 
 interface SidebarProps {
   activeTab: ModuleTab;
   onSelectTab: (tab: ModuleTab) => void;
   userRole: UserRole;
-  onBackToVitrine?: () => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    id: 'dashboard',
+    label: 'Tableau de bord',
+    sublabel: 'Vue exécutive usine',
+    icon: LayoutDashboard,
+    roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN', 'RESPONSABLE_PRODUCTION', 'COMPTABLE', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-sky-400',
+    dot: 'bg-emerald-400',
+  },
+  {
+    id: 'stock',
+    label: 'Stock Matière première et additif',
+    sublabel: 'Cartons, papiers & additifs',
+    icon: Boxes,
+    roles: ['DIRECTEUR_USINE', 'RESPONSABLE_STOCK', 'RESPONSABLE_PRODUCTION', 'RESPONSABLE_COMMERCIAL', 'COMMERCIAL', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-orange-400',
+  },
+  {
+    id: 'productivite',
+    label: 'Production',
+    sublabel: 'Ligne Shuliy & TRS',
+    icon: Gauge,
+    roles: ['DIRECTEUR_USINE', 'RESPONSABLE_PRODUCTION', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-amber-400',
+  },
+  {
+    id: 'produits_finis',
+    label: 'Stock produit fini',
+    sublabel: 'Alvéoles usine & fardeaux',
+    icon: PackageCheck,
+    roles: ['DIRECTEUR_USINE', 'RESPONSABLE_STOCK', 'RESPONSABLE_PRODUCTION', 'RESPONSABLE_COMMERCIAL', 'COMMERCIAL', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-blue-400',
+  },
+  {
+    id: 'commercial',
+    label: 'Gestion commerciale',
+    sublabel: 'Commandes & facturation',
+    icon: ShoppingBag,
+    roles: ['DIRECTEUR_USINE', 'RESPONSABLE_COMMERCIAL', 'COMMERCIAL', 'COMPTABLE', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-purple-400',
+  },
+  {
+    id: 'finances',
+    label: 'Parti financière',
+    sublabel: 'P&L, charges & trésorerie',
+    icon: DollarSign,
+    roles: ['DIRECTEUR_USINE', 'COMPTABLE', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-emerald-400',
+  },
+  {
+    id: 'inventaire',
+    label: 'Inventaires & Audits',
+    sublabel: 'Hebdo, mensuel & écarts',
+    icon: ClipboardCheck,
+    roles: ['DIRECTEUR_USINE', 'RESPONSABLE_STOCK', 'RESPONSABLE_PRODUCTION', 'COMPTABLE', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-teal-400',
+  },
+  {
+    id: 'audit_logs',
+    label: 'Journal d\'Audit',
+    sublabel: 'Traçabilité & Sécurité',
+    icon: ShieldCheck,
+    roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-rose-400',
+  },
+  {
+    id: 'cahier_charges',
+    label: 'Normes & CDC',
+    sublabel: 'Cahier des charges 28p',
+    icon: FileText,
+    roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN', 'RESPONSABLE_PRODUCTION', 'RESPONSABLE_STOCK', 'RESPONSABLE_COMMERCIAL', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-blue-400',
+  },
+  {
+    id: 'users',
+    label: 'Collaborateurs',
+    sublabel: 'Comptes & Accès Usine',
+    icon: Users,
+    roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN'],
+    color: 'text-indigo-400',
+  },
+  {
+    id: 'parametres',
+    label: 'Paramètres Usine',
+    sublabel: 'Tarifs, Cadences & Backup',
+    icon: Sliders,
+    roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN', 'CONTROLEUR_AUDITEUR'],
+    color: 'text-amber-400',
+  },
+];
+
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
   userRole,
-  onBackToVitrine,
   isOpen = false,
   onClose
 }) => {
   const { currentTheme } = useTheme();
-  const sections: {
-    sectionTitle: string;
-    modules: { id: ModuleTab; label: string; icon: any; roles: UserRole[]; badge?: string; badgeColor?: string }[];
-  }[] = [
-    {
-      sectionTitle: 'PILOTAGE USINE & PRODUCTION',
-      modules: [
-        { 
-          id: 'dashboard', 
-          label: 'Tableau de Bord Exécutif', 
-          icon: LayoutDashboard, 
-          roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN', 'COMPTABLE', 'RESPONSABLE_PRODUCTION', 'RESPONSABLE_COMMERCIAL', 'RESPONSABLE_STOCK'],
-          badge: 'Temps Réel'
-        },
-        { 
-          id: 'productivite', 
-          label: 'Indicateurs de Productivité', 
-          icon: Gauge, 
-          roles: ['DIRECTEUR_USINE', 'RESPONSABLE_PRODUCTION', 'SUPER_ADMIN', 'COMPTABLE'],
-          badge: 'TRS / OEE',
-          badgeColor: 'bg-amber-100 text-amber-900 border-amber-300'
-        },
-      ]
-    },
-    {
-      sectionTitle: 'STOCKS & FLUX MATIÈRES',
-      modules: [
-        { 
-          id: 'stock', 
-          label: 'Gestion des Stocks', 
-          icon: Boxes, 
-          roles: ['DIRECTEUR_USINE', 'RESPONSABLE_STOCK', 'RESPONSABLE_PRODUCTION', 'COMPTABLE', 'SUPER_ADMIN'],
-          badge: 'Cartons & PF'
-        },
-      ]
-    },
-    {
-      sectionTitle: 'COMMERCIAL & FINANCES',
-      modules: [
-        { 
-          id: 'commercial', 
-          label: 'Gestion Commerciale', 
-          icon: ShoppingBag, 
-          roles: ['DIRECTEUR_USINE', 'RESPONSABLE_COMMERCIAL', 'COMPTABLE', 'SUPER_ADMIN'],
-          badge: 'Factures / BL'
-        },
-        { 
-          id: 'finances', 
-          label: 'Comptabilité & Trésorerie', 
-          icon: DollarSign, 
-          roles: ['DIRECTEUR_USINE', 'COMPTABLE', 'SUPER_ADMIN'],
-          badge: 'P&L Usine'
-        },
-      ]
-    },
-    {
-      sectionTitle: 'CONFORMITÉ & SÉCURITÉ',
-      modules: [
-        { 
-          id: 'cahier_charges', 
-          label: 'Cahier des Charges & Normes', 
-          icon: FileText, 
-          roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN', 'COMPTABLE', 'RESPONSABLE_PRODUCTION', 'RESPONSABLE_COMMERCIAL', 'RESPONSABLE_STOCK'],
-          badge: '28 Pages CDC',
-          badgeColor: 'bg-amber-100 text-amber-900 border-amber-300'
-        },
-        { 
-          id: 'audit_logs', 
-          label: 'Journal d\'Audit & Sécurité', 
-          icon: ShieldCheck, 
-          roles: ['DIRECTEUR_USINE', 'SUPER_ADMIN'],
-          badge: 'Traçabilité'
-        },
-      ]
-    }
-  ];
+
+  const visibleItems = NAV_ITEMS.filter(item =>
+    item.roles.includes(userRole)
+  );
 
   return (
     <>
-      {/* Backdrop sombre sur mobile */}
+      {/* Backdrop mobile */}
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[240] md:hidden transition-opacity animate-fadeIn"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[240] md:hidden"
           aria-hidden="true"
         />
       )}
 
-      <aside className={`fixed md:sticky top-0 left-0 z-[250] w-72 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 h-screen text-white select-none transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
-      }`}>
-        {/* Haut de la sidebar : Logo usine + bouton fermer mobile */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${currentTheme.logoBadgeClass} flex items-center justify-center font-black text-lg shadow-lg shrink-0 transition-colors`}>
-              <Factory className="w-6 h-6" />
+      <aside
+        className={`
+          fixed md:relative inset-y-0 md:inset-auto left-0 z-[250]
+          w-64 shrink-0 h-full
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${currentTheme.sidebarBg}
+          ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        {/* ── Logo Officiel BS Alvéoles ───────────────────── */}
+        <div className="px-4 py-3.5 border-b border-white/5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-white rounded-xl p-1 shadow-sm shrink-0 flex items-center justify-center">
+              <img 
+                src="/logo-bs-alveoles.png" 
+                alt="BS Alvéoles" 
+                className="h-8 w-auto object-contain"
+              />
             </div>
             <div>
-              <div className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
-                BS ALVÉOLES
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-black">
-                  ERP
-                </span>
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium">Unité de Production d'Alvéoles</div>
+              <div className="font-black text-xs text-white tracking-tight leading-none">BS ALVÉOLES</div>
+              <div className="text-[9px] text-slate-400 mt-0.5 font-medium">Bécaye Saliou · SARL</div>
             </div>
           </div>
-
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="md:hidden p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition-colors"
-              title="Fermer le menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Navigation des modules */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-          {sections.map((sec, sIdx) => (
-            <div key={sIdx}>
-              <div className="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                {sec.sectionTitle}
-              </div>
-              <div className="space-y-1">
-                {sec.modules.map(mod => {
-                  const isActive = activeTab === mod.id;
-                  const Icon = mod.icon;
+        {/* ── Navigation ───────────────────────────────────── */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          {visibleItems.map(item => {
+            const isActive = activeTab === item.id;
+            const Icon = item.icon;
 
-                  return (
-                    <button
-                      key={mod.id}
-                      onClick={() => {
-                        onSelectTab(mod.id);
-                        onClose?.();
-                      }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
-                        isActive
-                          ? currentTheme.sidebarActiveClass
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4" />
-                        <span>{mod.label}</span>
-                      </div>
-                      {mod.badge && (
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                          isActive
-                            ? 'bg-slate-950/20 text-slate-950 border-slate-950/30'
-                            : mod.badgeColor || 'bg-slate-800 text-slate-400 border-slate-700'
-                        }`}>
-                          {mod.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            return (
+              <button
+                key={item.id}
+                onClick={() => { onSelectTab(item.id); onClose?.(); }}
+                className={`
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+                  text-left transition-all duration-150 group relative
+                  ${isActive
+                    ? `bg-gradient-to-r ${currentTheme.gradient} text-white shadow-lg`
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }
+                `}
+              >
+                {/* Indicateur actif gauche */}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-white/60" />
+                )}
+
+                {/* Icône */}
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : `bg-white/5 ${item.color} group-hover:bg-white/10`
+                }`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+
+                {/* Texte */}
+                <div className="flex-1 min-w-0">
+                  <div className={`text-xs font-bold leading-tight truncate ${isActive ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
+                    {item.label}
+                  </div>
+                  <div className={`text-[10px] font-medium truncate mt-0.5 ${isActive ? 'text-white/70' : 'text-slate-500'}`}>
+                    {item.sublabel}
+                  </div>
+                </div>
+
+                {/* Dot live */}
+                {item.dot && !isActive && (
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot} animate-pulse`} />
+                )}
+              </button>
+            );
+          })}
         </nav>
 
-      {/* Bas de sidebar : Bouton retour vitrine / info session / install PWA */}
-      <div className="p-4 border-t border-slate-800 space-y-2">
-        <InstallPwaButton className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-md transition-all active:scale-95" />
+        {/* ── Bas de sidebar ────────────────────────────────── */}
+        <div className="px-3 pb-4 pt-3 border-t border-white/5 space-y-2 shrink-0">
+          {/* Sélecteur de thème */}
+          <div className="flex items-center justify-between px-2">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Thème</span>
+            <ThemeSwitcher compact={true} />
+          </div>
 
-        {onBackToVitrine && (
-          <button
-            onClick={onBackToVitrine}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700/80 transition-all"
+          {/* Installer PWA */}
+          <InstallPwaButton
+            label="Installer l'application"
+            showStatusIfInstalled={true}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-md shadow-amber-500/10 transition-all active:scale-95"
+          />
+
+          {/* Manuel Utilisateur PDF */}
+          <a
+            href="/MANUEL_UTILISATEUR_BS_ALVEOLES.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-amber-300 hover:text-amber-200 border border-amber-500/20 text-xs font-bold transition-all"
+            title="Consulter le guide et manuel complet de l'application"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Voir Vitrine / Catalogue
-          </button>
-        )}
-        <div className="text-[10px] text-center text-slate-500">
-          BS ALVÉOLES SÉNÉGAL • v2.0 MES
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Manuel & Guide (PDF)</span>
+          </a>
+
+          <div className="text-[10px] text-center text-slate-600 pt-0.5">
+            BS ALVÉOLES · Dakar, Sénégal
+          </div>
         </div>
-      </div>
-    </aside>
-  </>
+      </aside>
+    </>
   );
 };

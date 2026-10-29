@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manuel d'Utilisation Officiel • BS ALVÉOLES ERP/MES</title>
+  <style>
+    :root {
+      --primary: #1E3A5F;
+      --primary-dark: #0f1f33;
+      --gold: #C49B66;
+      --gold-light: #fef3c7;
+      --accent: #4f46e5;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-700: #334155;
+      --slate-900: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--slate-900);
+      background-color: #f3f4f6;
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 48px;
+      border-radius: 24px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+    }
+
+    /* En-tête */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .header-logo img {
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .header-titles h1 {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .header-titles p {
+      font-size: 13px;
+      color: var(--slate-700);
+      font-weight: 600;
+    }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 13px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-print:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    /* Règle d'or commerciale */
+    .alert-rule {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-left: 6px solid #d97706;
+      padding: 20px 24px;
+      border-radius: 14px;
+      margin-bottom: 32px;
+    }
+
+    .alert-rule h3 {
+      color: #92400e;
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .alert-rule p {
+      color: #78350f;
+      font-size: 13.5px;
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.7;
+    }
+
+    /* Sommaire */
+    .toc {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 36px;
+    }
+
+    .toc h2 {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 14px;
+    }
+
+    .toc ol {
+      padding-left: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+    }
+
+    .toc a {
+      color: var(--slate-700);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .toc a:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    /* Sections */
+    .section {
+      margin-bottom: 44px;
+      padding-top: 14px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--primary);
+      border-bottom: 2px solid var(--slate-200);
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    .section-num {
+      background: var(--primary);
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    p {
+      margin-bottom: 12px;
+      font-size: 13.5px;
+      color: var(--slate-700);
+    }
+
+    /* Cartes d'étapes */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .step-card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 14px;
+      padding: 18px 22px;
+    }
+
+    .step-card h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--slate-900);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-badge {
+      background: var(--gold);
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* Rôles */
+    .roles-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 12.5px;
+    }
+
+    .roles-table th {
+      background: var(--primary);
+      color: white;
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 700;
+    }
+
+    .roles-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    .roles-table tr:nth-child(even) {
+      background-color: var(--slate-50);
+    }
+
+    /* Astuces */
+    .tip-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 12.5px;
+      color: #1e40af;
+    }
+
+    .faq-item {
+      background: #fdfdfd;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+    }
+
+    .faq-q {
+      font-weight: 800;
+      font-size: 13.5px;
+      color: var(--slate-900);
+      margin-bottom: 4px;
+    }
+
+    .faq-a {
+      font-size: 13px;
+      color: var(--slate-700);
+      margin: 0;
+    }
+
+    .footer {
+      border-top: 1px solid var(--slate-200);
+      padding-top: 24px;
+      margin-top: 48px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Mode Impression PDF */
+    @media print {
+      body {
+        padding: 0;
+        background: #fff;
+      }
+      .container {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .btn-print {
+        display: none;
+      }
+      .toc {
+        page-break-after: avoid;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- En-tête -->
+    <div class="header">
+      <div class="header-logo">
+        <img src="/logo-bs-alveoles.png" alt="BS Alvéoles Logo" onerror="this.src='/logo.png'">
+        <div class="header-titles">
+          <h1>BS ALVÉOLES SUARL</h1>
+          <p>Manuel d'Utilisation Officiel & Guide Complet des Opérations ERP/MES</p>
+        </div>
+      </div>
+      <div>
+        <button class="btn-print" onclick="window.print()">
+          🖨️ Imprimer / Télécharger en PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Sommaire cliquable -->
+    <div class="toc">
+      <h2>Sommaire Complet du Manuel</h2>
+      <ol>
+        <li><a href="#s1">1. Connexion & Les 8 Rôles Utilisateurs</a></li>
+        <li><a href="#s2">2. Tableau de Bord & Indicateurs Usine (KPIs)</a></li>
+        <li><a href="#s3">3. Commercial, Facturation & Bons de Livraison</a></li>
+        <li><a href="#s4">4. Stocks & Synchronisation Entrées / Sorties</a></li>
+        <li><a href="#s5">5. Production Industrielle 3x8 & Lignes de Moulage</a></li>
+        <li><a href="#s6">6. Inventaires Physiques & Gestion des Écarts</a></li>
+        <li><a href="#s7">7. Finances, Règlements & Charges d'Exploitation</a></li>
+        <li><a href="#s8">8. Contrats Annuels & Vente Terrain (Commerciaux)</a></li>
+        <li><a href="#s9">9. Importation de Fichiers (CSV / Excel)</a></li>
+        <li><a href="#s10">10. Sauvegarde sur Clé USB & Mode Hors-Ligne (PWA)</a></li>
+        <li><a href="#s11">11. Administration, Utilisateurs & Journal d'Audit</a></li>
+        <li><a href="#s12">12. Questions Fréquentes & Dépannage Rapide</a></li>
+      </ol>
+    </div>
+
+    <!-- Section 1 : Rôles -->
+    <div class="section" id="s1">
+      <div class="section-title">
+        <div class="section-num">1</div>
+        <h2>Connexion & Gestion des 8 Rôles Utilisateurs</h2>
+      </div>
+      <p>
+        L'application propose 8 profils spécialisés adaptés à l'organisation de l'usine BS ALVÉOLES. Pour basculer rapidement d'un compte à un autre en phase d'exploitation ou de supervision, utilisez le sélecteur rapide en haut à droite.
+      </p>
+
+      <table class="roles-table">
+        <thead>
+          <tr>
+            <th>Rôle</th>
+            <th>Profil de Démonstration</th>
+            <th>Missions & Accès Principaux</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>DIRECTEUR GÉNÉRAL</strong></td>
+            <td>M. Babacar SECK</td>
+            <td>Vision exécutive, validation des contrats majeurs, indicateurs financiers, rentabilité globale.</td>
+          </tr>
+          <tr>
+            <td><strong>DIRECTEUR D'USINE</strong></td>
+            <td>Ing. Mamadou DIOP</td>
+            <td>Supervision technique, cadences nominales (2000 alv/h), paramètres industriels et financiers.</td>
+          </tr>
+          <tr>
+            <td><strong>RESPONSABLE PRODUCTION</strong></td>
+            <td>Cheikh NDOYE</td>
+            <td>Saisie des shifts 3x8, suivi des 1700 alv/h réelles, contrôle et réinjection des rebuts (< 3%).</td>
+          </tr>
+          <tr>
+            <td><strong>RESPONSABLE QUALITÉ</strong></td>
+            <td>Awa FALL</td>
+            <td>Contrôle du grammage standard (68g), résistance, humidité de la pâte, validation des lots.</td>
+          </tr>
+          <tr>
+            <td><strong>RESPONSABLE MAINTENANCE</strong></td>
+            <td>Ibrahima SOW</td>
+            <td>Entretien préventif, moules d'aspiration, compresseurs, pompes à vide et séchoir tunnel.</td>
+          </tr>
+          <tr>
+            <td><strong>RESPONSABLE COMMERCIAL</strong></td>
+            <td>Fatou TRAORÉ</td>
+            <td>Gestion du portefeuille clients B2B, facturation 3 500 F/paquet, suivi Wave/OM et recouvrement.</td>
+          </tr>
+          <tr>
+            <td><strong>RESPONSABLE STOCK</strong></td>
+            <td>Ousmane BA</td>
+            <td>Balles de carton OCC en entrée (seuil alerte 8 T), sorties camions, alerte stock critique.</td>
+          </tr>
+          <tr>
+            <td><strong>MAGASINIER USINE</strong></td>
+            <td>Abdoulaye KANE</td>
+            <td>Pesée cartons d'entrée, préparation des commandes et chargement des camions clients.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 2 : Tableau de bord -->
+    <div class="section" id="s2">
+      <div class="section-title">
+        <div class="section-num">2</div>
+        <h2>Tableau de Bord & Indicateurs Usine (KPIs)</h2>
+      </div>
+      <p>
+        Le tableau de bord consolide en temps réel les données clés conformément au Cahier des Charges (CDC) :
+      </p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <h4><span class="step-badge">KPI 1</span> Production Journalière & Rendement</h4>
+          <p>Indique le nombre total d'alvéoles produites sur les 3 shifts. L'objectif standard de référence est de <strong>13 600 alvéoles / jour</strong> (à 85% de taux de rendement synthétique).</p>
+        </div>
+        <div class="step-card">
+          <h4><span class="step-badge">KPI 2</span> Taux de Rebut Global</h4>
+          <p>Alerte visuelle couleur instantanée :<br>
+            • <strong style="color: green;">Vert :</strong> ≤ 3% (conforme aux normes industrielles).<br>
+            • <strong style="color: orange;">Orange :</strong> Entre 3% et 5% (attention à la consistance de la pâte).<br>
+            • <strong style="color: red;">Rouge :</strong> > 5% (alerte critique : vérifier les moules et la dépression d'aspiration).
+          </p>
+        </div>
+        <div class="step-card">
+          <h4><span class="step-badge">KPI 3</span> Chiffre d'Affaires & Ventes</h4>
+          <p>Calculé sur la base de <strong>3 500 FCFA par paquet de 100</strong>. Affiche le CA encaissé en temps réel et les créances clients restant à recouvrer.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 : Commercial & Factures -->
+    <div class="section" id="s3">
+      <div class="section-title">
+        <div class="section-num">3</div>
+        <h2>Module Commercial, Facturation & Bons de Livraison</h2>
+      </div>
+      <p>
+        C'est le module de distribution. Les factures générées respectent le formalisme légal avec le vrai logo BS ALVÉOLES.
+      </p>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <h4>Étape 1 : Créer une Nouvelle Commande / Facture</h4>
+          <p>
+            1. Rendez-vous dans <strong>Commercial & Ventes</strong>.<br>
+            2. Cliquez sur <strong>"+ Nouvelle Commande / Vente"</strong>.<br>
+            3. Sélectionnez le client (ferme avicole, grossiste, couvoir...).<br>
+            4. Indiquez la quantité en <strong>paquets de 100 alvéoles</strong> (ex: 200 paquets).<br>
+            5. Le montant total est calculé instantanément : <em>200 paquets × 3 500 FCFA = 700 000 FCFA</em>.<br>
+            6. Sélectionnez le mode de règlement (Wave, Orange Money, Virement, Espèces, Chèque).<br>
+            7. Cliquez sur <strong>"Valider la Vente & Facture"</strong>.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <h4>Étape 2 : Imprimer & Télécharger la Facture PDF A4</h4>
+          <p>
+            Dans la liste des commandes, cliquez sur l'icône <strong>œil</strong> pour visualiser la facture claire à l'écran, ou sur l'icône <strong>téléchargement</strong> pour générer immédiatement le PDF officiel haute résolution avec le vrai logo BS ALVÉOLES, le numéro séquentiel et le Bon de Livraison associé.
+          </p>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        💡 <strong>Bon de Livraison (BL) automatique :</strong> Renseignez le nom du chauffeur et le matricule du camion lors de la saisie : le Bon de Livraison officiel sera imprimé avec la facture pour le transport routier.
+      </div>
+    </div>
+
+    <!-- Section 4 : Stocks -->
+    <div class="section" id="s4">
+      <div class="section-title">
+        <div class="section-num">4</div>
+        <h2>Gestion des Stocks & Synchronisation Entrées / Sorties</h2>
+      </div>
+      <p>
+        Le logiciel applique une <strong>synchronisation totale en temps réel</strong> :
+      </p>
+      <ul style="padding-left: 20px; font-size: 13.5px; color: var(--slate-700); margin-bottom: 14px;">
+        <li><strong>Entrée automatique :</strong> Chaque shift de production validé augmente automatiquement le stock de paquets de 100 en magasin.</li>
+        <li><strong>Sortie automatique :</strong> Chaque vente / facture enregistrée déduit automatiquement les paquets du stock et crée un mouvement de stock tracé <code>SORTIE_VENTE</code> avec référence de facture.</li>
+        <li><strong>Matières premières :</strong> Suivi des balles de cartons ondulés recyclés (OCC) à l'entrée usine avec seuil d'alerte sécurité à 8 tonnes.</li>
+        <li><strong>Dotation commerciale :</strong> Les paquets confiés aux commerciaux pour les tournées terrain sont suivis séparément du stock usine via les bons de sortie commerciale.</li>
+      </ul>
+    </div>
+
+    <!-- Section 5 : Production -->
+    <div class="section" id="s5">
+      <div class="section-title">
+        <div class="section-num">5</div>
+        <h2>Module Production & Lignes de Moulage (3x8)</h2>
+      </div>
+      <p>
+        L'usine fonctionne en 3 postes de travail :<br>
+        • <strong>Poste 1 :</strong> 06h00 – 14h00<br>
+        • <strong>Poste 2 :</strong> 14h00 – 22h00<br>
+        • <strong>Poste 3 :</strong> 22h00 – 06h00
+      </p>
+      <p>
+        À la fin de chaque poste, le Responsable de Production saisit :
+      </p>
+      <ul style="padding-left: 20px; font-size: 13.5px; color: var(--slate-700); margin-bottom: 14px;">
+        <li>Le nombre d'alvéoles brutes formées par la machine de moulage.</li>
+        <li>Le nombre d'alvéoles défectueuses / rebuts (réinjectées directement au pulpeur).</li>
+        <li>Le nombre de <strong>paquets de 100 ficelés</strong> prêts pour le magasin.</li>
+        <li>La consommation d'électricité (kWh) et de pâte de carton (kg).</li>
+      </ul>
+    </div>
+
+    <!-- Section 6 : Inventaire -->
+    <div class="section" id="s6">
+      <div class="section-title">
+        <div class="section-num">6</div>
+        <h2>Module Inventaire Physique Usine</h2>
+      </div>
+      <p>
+        Permet de réaliser l'inventaire périodique obligatoire conformément à la section 8 du Cahier des Charges :
+      </p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <h4>Déroulement d'un Inventaire :</h4>
+          <p>
+            1. Le magasinier effectue le comptage physique des paquets de 100 dans le hangar.<br>
+            2. Il saisit les quantités réelles comptées dans le module <strong>Inventaires & Audits</strong>.<br>
+            3. Le logiciel calcule automatiquement l'écart (physique vs théorique).<br>
+            4. La valorisation financière en FCFA de l'écart est calculée immédiatement.<br>
+            5. La session est validée et archivée avec horodatage et signature électronique.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 7 : Finances -->
+    <div class="section" id="s7">
+      <div class="section-title">
+        <div class="section-num">7</div>
+        <h2>Finances & Comptabilité de Gestion</h2>
+      </div>
+      <p>
+        Suivi rigoureux des flux financiers et des encaissements :
+      </p>
+      <ul style="padding-left: 20px; font-size: 13.5px; color: var(--slate-700); margin-bottom: 14px;">
+        <li><strong>Règlements Mobile Money :</strong> Wave & Orange Money pour sécuriser les encaissements sans manipulation d'espèces.</li>
+        <li><strong>Crédits clients & Relances :</strong> Suivi des délais de paiement accordés (ex: 15 jours) et alertes en cas de dépassement d'échéance.</li>
+        <li><strong>Charges d'exploitation :</strong> Intégration des factures Senelec, eau, transport (forfait 300 000 FCFA/mois) et salaires pour déterminer la marge nette réelle.</li>
+      </ul>
+    </div>
+
+    <!-- Section 8 : Contrats Commerciaux -->
+    <div class="section" id="s8">
+      <div class="section-title">
+        <div class="section-num">8</div>
+        <h2>Contrats Annuels B2B & Vente Terrain Commerciaux</h2>
+      </div>
+      <p>
+        Conformément aux sections 7.2 et 7.5 du CDC :
+      </p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <h4>1. Contrats d'Approvisionnement Annuels B2B</h4>
+          <p>
+            Permet de sécuriser des contrats réguliers avec les grandes fermes avicoles de Thiès et Dakar (ex: 5 000 paquets/an). Le système suit le quota mensuel livré, le solde restant et la cadence contractuelle.
+          </p>
+        </div>
+        <div class="step-card">
+          <h4>2. Bons de Sortie & Retours Commerciaux Terrain</h4>
+          <p>
+            Lorsqu'un commercial part en tournée de distribution :<br>
+            • Un <strong>Bon de Sortie Commerciale</strong> lui affecte une dotation (ex: 50 paquets de 100).<br>
+            • Au retour, un <strong>Bon de Retour d'Invendus</strong> réintègre les invendus en stock usine.<br>
+            • La différence correspond exactement aux ventes encaissées à justifier.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 9 : Importation CSV -->
+    <div class="section" id="s9">
+      <div class="section-title">
+        <div class="section-num">9</div>
+        <h2>Importation de Données depuis Fichiers (CSV / Excel)</h2>
+      </div>
+      <p>
+        Pour intégrer facilement vos listes de clients ou vos réceptions de marchandises sans ressaisie manuelle :
+      </p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <h4>Comment importer vos données :</h4>
+          <p>
+            1. Allez dans <strong>Commercial > Clients</strong> ou dans <strong>Paramètres > Sauvegarde</strong>.<br>
+            2. Cliquez sur <strong>"Importer Clients (CSV / Excel)"</strong>.<br>
+            3. Cliquez sur <strong>"Télécharger le Modèle Vierge"</strong> pour obtenir le format attendu.<br>
+            4. Remplissez votre fichier dans Microsoft Excel puis enregistrez-le au format <code>.csv</code>.<br>
+            5. Sélectionnez le fichier dans l'application puis cliquez sur <strong>"Valider l'importation"</strong>.<br>
+            6. Tous vos enregistrements sont instantanément disponibles dans la base de données !
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 10 : Sauvegarde & PWA -->
+    <div class="section" id="s10">
+      <div class="section-title">
+        <div class="section-num">10</div>
+        <h2>Sauvegarde Sécurisée sur Clé USB & Mode Hors-Ligne (PWA)</h2>
+      </div>
+      <p>
+        L'application BS ALVÉOLES fonctionne en technologie <strong>Progressive Web App (PWA)</strong> :
+      </p>
+      <ul style="padding-left: 20px; font-size: 13.5px; color: var(--slate-700); margin-bottom: 14px;">
+        <li><strong>Fonctionnement 100% Hors-Ligne :</strong> Les données sont conservées localement dans la base IndexedDB haute performance de votre navigateur. Même en cas de coupure Internet à l'usine, vous pouvez saisir la production, éditer des factures et enregistrer des ventes.</li>
+        <li><strong>Sauvegarde Complète (Dump JSON) :</strong> Dans <em>Paramètres Usine > Sauvegarde</em>, cliquez régulièrement sur <strong>"Télécharger le Dump JSON de l'Usine"</strong> pour stocker une copie de secours sur clé USB ou disque externe.</li>
+        <li><strong>Restauration en 1 clic :</strong> En cas de changement d'ordinateur, sélectionnez le fichier JSON pour restaurer l'intégralité de l'historique sans rien perdre.</li>
+      </ul>
+    </div>
+
+    <!-- Section 11 : Administration & Audit -->
+    <div class="section" id="s11">
+      <div class="section-title">
+        <div class="section-num">11</div>
+        <h2>Administration, Collaborateurs & Journal d'Audit</h2>
+      </div>
+      <p>
+        Conformément à la section 9 du Cahier des Charges :
+      </p>
+      <ul style="padding-left: 20px; font-size: 13.5px; color: var(--slate-700); margin-bottom: 14px;">
+        <li><strong>Gestion des Collaborateurs :</strong> Création de nouveaux comptes utilisateurs, attribution des rôles et réinitialisation des accès.</li>
+        <li><strong>Journal d'Audit Immuable :</strong> Chaque opération sensible (modification des prix, annulation de facture, ajustement d'inventaire) est enregistrée avec le nom de l'utilisateur, la date, l'heure et le motif obligatoire.</li>
+      </ul>
+    </div>
+
+    <!-- Section 12 : FAQ & Dépannage -->
+    <div class="section" id="s12">
+      <div class="section-title">
+        <div class="section-num">12</div>
+        <h2>Questions Fréquentes & Dépannage Rapide</h2>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q1 : Un client demande à acheter 50 alvéoles au détail, que faire ?</div>
+        <div class="faq-a">R : L'usine ne vend pas au détail. Informez le client que le conditionnement minimal est le <strong>paquet ficelé de 100 alvéoles à 3 500 FCFA</strong>.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q2 : Le logo n'apparaît pas ou les boutons semblent figés, que faire ?</div>
+        <div class="faq-a">R : Cliquez sur le bouton <strong>"Vider le cache & Relancer"</strong> sur l'écran d'accueil ou faites <kbd>Ctrl + F5</kbd> sur votre clavier pour forcer le chargement de la dernière version.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q3 : Comment imprimer la facture au format papier A4 ?</div>
+        <div class="faq-a">R : Dans la commande, cliquez sur <strong>"Télécharger PDF"</strong> puis ouvrez le fichier téléchargé et lancez l'impression sur votre imprimante de bureau. Vous pouvez aussi cliquer sur <strong>"Imprimer"</strong> pour lancer directement l'impression navigateur.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q4 : Peut-on utiliser l'application sur un smartphone ou une tablette ?</div>
+        <div class="faq-a">R : Oui, l'application est entièrement responsive. Ouvrez le lien sur Chrome sur mobile puis cliquez sur <strong>"Ajouter à l'écran d'accueil"</strong> pour l'installer comme une application mobile standard.</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><strong>BS ALVÉOLES SUARL</strong> • Unité Industrielle de Pâte Moulée & Emballages Avicoles</p>
+      <p>Dakar & Thiès, Sénégal • Service Technique & Support Déploiement</p>
+      <p>Manuel officiel conforme au Cahier des Charges • Version 2.0 • 2026</p>
+    </div>
+
+  </div>
+
+</body>
+</html>

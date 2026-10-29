@@ -6,9 +6,16 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export const InstallPwaButton: React.FC<{ className?: string; compact?: boolean }> = ({ 
+export const InstallPwaButton: React.FC<{ 
+  className?: string; 
+  compact?: boolean;
+  label?: string;
+  showStatusIfInstalled?: boolean;
+}> = ({ 
   className = '', 
-  compact = false 
+  compact = false,
+  label,
+  showStatusIfInstalled = false
 }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -59,18 +66,28 @@ export const InstallPwaButton: React.FC<{ className?: string; compact?: boolean 
   };
 
   if (isInstalled) {
+    if (showStatusIfInstalled) {
+      return (
+        <div className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold">
+          <Check className="w-3.5 h-3.5" />
+          <span>Application installée</span>
+        </div>
+      );
+    }
     return null;
   }
+
+  const buttonText = label || (compact ? 'Installer App' : '📲 Installer sur Mobile');
 
   return (
     <>
       <button
         onClick={handleInstallClick}
         className={className || `flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95`}
-        title="Installer l'application sur votre smartphone"
+        title="Installer l'application sur votre smartphone ou PC"
       >
-        <Smartphone className="w-4 h-4 text-slate-950 animate-pulse" />
-        <span>{compact ? 'Installer App' : '📲 Installer sur Mobile'}</span>
+        <Smartphone className="w-4 h-4 text-current shrink-0 animate-pulse" />
+        <span>{buttonText}</span>
       </button>
 
       {/* Guide d'installation iOS Safari */}

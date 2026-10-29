@@ -1,6 +1,6 @@
 import React from 'react';
 import { ModuleTab } from './Sidebar';
-import { LayoutDashboard, Gauge, Boxes, ShoppingBag, Menu } from 'lucide-react';
+import { LayoutDashboard, Gauge, Boxes, ShoppingBag, Menu, PackageCheck } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeTab: ModuleTab;
@@ -17,8 +17,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const navItems: { id: ModuleTab | 'menu'; label: string; icon: any }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'stock', label: 'Matières', icon: Boxes },
     { id: 'productivite', label: 'Production', icon: Gauge },
-    { id: 'stock', label: 'Stocks', icon: Boxes },
+    { id: 'produits_finis', label: 'Prod. Finis', icon: PackageCheck },
     { id: 'commercial', label: 'Ventes', icon: ShoppingBag },
     { id: 'menu', label: 'Plus...', icon: Menu },
   ];

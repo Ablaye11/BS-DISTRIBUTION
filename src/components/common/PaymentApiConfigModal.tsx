@@ -39,8 +39,8 @@ export const PaymentApiConfigModal: React.FC<PaymentApiConfigModalProps> = ({ on
   };
 
   return (
-    <div className="fixed inset-0 z-[700] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 md:p-4 font-sans overflow-y-auto">
-      <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-3xl p-5 md:p-8 space-y-6 shadow-2xl my-auto">
+    <div className="fixed inset-0 z-[250] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 font-sans overflow-y-auto overscroll-contain">
+      <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-3xl p-4 sm:p-8 space-y-6 shadow-2xl max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain flex flex-col">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -170,7 +170,7 @@ export const PaymentApiConfigModal: React.FC<PaymentApiConfigModalProps> = ({ on
           </div>
 
           {/* Action Footer */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <div className="sticky bottom-0 bg-white/95 backdrop-blur-md flex items-center justify-end gap-3 pt-3 pb-4 sm:pb-2 border-t border-slate-100 z-20 mt-auto">
             <button
               type="button"
               onClick={onClose}
