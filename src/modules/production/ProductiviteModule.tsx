@@ -58,14 +58,19 @@ export const ProductiviteModule: React.FC = () => {
   });
   const [maintenanceNotes, setMaintenanceNotes] = useState('');
 
-  // ── Paramètres industriels de référence (CDC Section 5.3 & 9.1) ────
+  // ── Paramètres industriels de référence (1 Shift de 8h avec 1h de pause • Lundi au Samedi) ────
   const CADENCE_NOMINALE = factorySettings?.cadenceNominale || 2000; // 2 000 alvéoles/h
   const TAUX_RENDEMENT_CIBLE = factorySettings?.tauxRendementRetenu || 85; // 85%
   const CADENCE_REELLE_CIBLE = factorySettings?.cadenceReelleCible || 1700; // 1 700 alvéoles/h
-  const HEURES_SHIFT_REF = factorySettings?.heuresEffectivesParJour || 8; // 8 heures/jour
+  // Organisation usine : 1 Seul Shift de 8h avec 1h de pause du Lundi au Samedi (6j/semaine)
+  const DUREE_SHIFT_BRUTE = 8; // 8 heures de présence totale
+  const PAUSE_SHIFT_HEURES = 1; // 1 heure de pause obligatoire
+  const HEURES_MACHINE_NETTES = DUREE_SHIFT_BRUTE - PAUSE_SHIFT_HEURES; // 7 heures nettes de travail machine
+  const HEURES_SHIFT_REF = HEURES_MACHINE_NETTES; // 7 heures nettes de production par jour
   const RENDEMENT_MATIERE_REF = factorySettings?.rendementMatiereAlvParKg || 35; // 35 alv/kg
-  const CIBLE_JOUR = CADENCE_REELLE_CIBLE * HEURES_SHIFT_REF; // 13 600 alvéoles
-  const CIBLE_MOIS = CIBLE_JOUR * (factorySettings?.joursProductionParMois || 26); // 353 600 alvéoles
+  const CIBLE_JOUR = CADENCE_REELLE_CIBLE * HEURES_MACHINE_NETTES; // 1 700 * 7 = 11 900 alvéoles/jour
+  const CIBLE_SEMAINE = CIBLE_JOUR * 6; // 6 jours du lundi au samedi = 71 400 alvéoles/semaine
+  const CIBLE_MOIS = CIBLE_JOUR * (factorySettings?.joursProductionParMois || 26); // 26 jours = 309 400 alvéoles/mois
 
   // ── Filtres de liste ────────────────────────────────────────────────
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -88,6 +93,7 @@ export const ProductiviteModule: React.FC = () => {
     heureDemarrage: string;
     heureArret: string;
     heuresPlanifiees: number;
+    heuresPause: number;
     heuresArret: number;
     natureArret: string;
     motifArret: string;
@@ -103,30 +109,32 @@ export const ProductiviteModule: React.FC = () => {
   }>({
     date: todayStr,
     shift: 'MATIN_06H_14H',
-    ligneProduction: 'Ligne 1 - Mouleuse Rotative 4 Faces (Cadence Cible: 1 700 alv/h)',
-    responsableShift: 'Amadou Bâ (Chef de Quart)',
+    ligneProduction: 'Ligne Unique - Chaîne Shuliy Machinery 4 Faces (3 000 alv/h max)',
+    responsableShift: 'Amadou Bâ (Chef d\'Équipe Unique)',
     produitId: products[0]?.id || 'prod-alv-30-std',
-    heureDemarrage: '06:00',
-    heureArret: '14:00',
+    heureDemarrage: '08:00',
+    heureArret: '16:00',
     heuresPlanifiees: 8,
+    heuresPause: 1,
     heuresArret: 0,
     natureArret: 'AUCUN',
     motifArret: '',
-    quantiteTotaleFabriquee: 13600,
-    quantiteConforme: 13200,
-    quantiteNonConforme: 400,
-    quantiteMiseEnRebut: 400,
+    quantiteTotaleFabriquee: 11900,
+    quantiteConforme: 11550,
+    quantiteNonConforme: 350,
+    quantiteMiseEnRebut: 350,
     quantiteReutilisable: 0,
-    papierCartonConsommeKg: 388,
-    observations: 'Conforme aux standards CDC. Cycle de production normal.',
+    papierCartonConsommeKg: 340,
+    observations: 'Shift Unique 8h (Pause 1h - Lundi au Samedi). Équipe Unique & Ligne Unique Shuliy.',
     derogationAccordee: false,
     motifDerogation: ''
   });
 
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Calculs dynamiques de la fiche de production (CDC 5.1, 5.2, 5.3)
-  const shiftHeuresFonc = Math.max(0.1, Number((newShift.heuresPlanifiees - newShift.heuresArret).toFixed(2)));
+  // Calculs dynamiques : 8h présence totale - 1h de pause obligatoire - arrêts machines imprévus
+  const shiftHeuresMachineDispo = Math.max(0, (newShift.heuresPlanifiees || 8) - (newShift.heuresPause || 1));
+  const shiftHeuresFonc = Math.max(0.1, Number((shiftHeuresMachineDispo - (newShift.heuresArret || 0)).toFixed(2)));
   const shiftProductionTheoriqueAttendue = Math.round(CADENCE_REELLE_CIBLE * shiftHeuresFonc);
   
   // Règle de cohérence 5.2 : Production totale = Conforme + Non conforme
@@ -151,19 +159,20 @@ export const ProductiviteModule: React.FC = () => {
     ? Number(((Number(newShift.quantiteTotaleFabriquee) || 0) / (Number(newShift.papierCartonConsommeKg) || 1)).toFixed(1))
     : 0;
 
-  // Jeux d'essai CDC Section 14
+  // Jeux d'essai CDC adaptés au Shift Unique 8h (avec 1h de pause = 7h nettes)
   const applyScenarioTest1 = () => {
     setNewShift(prev => ({
       ...prev,
       heuresPlanifiees: 8,
+      heuresPause: 1,
       heuresArret: 0,
-      quantiteTotaleFabriquee: 13600,
-      quantiteConforme: 13200,
-      quantiteNonConforme: 400,
-      quantiteMiseEnRebut: 400,
+      quantiteTotaleFabriquee: 11900,
+      quantiteConforme: 11550,
+      quantiteNonConforme: 350,
+      quantiteMiseEnRebut: 350,
       quantiteReutilisable: 0,
-      papierCartonConsommeKg: 388,
-      observations: 'Scénario Test 1 CDC : 13 600 totaux, 13 200 conformes, 400 non conformes (Taux rebut: 2.94% - Statut Vert).'
+      papierCartonConsommeKg: 340,
+      observations: 'Scénario Test 1 : Shift unique 8h (1h pause). 11 900 totaux (7h x 1 700 alv/h), 11 550 conformes, 350 rebuts (Taux: 2.94% - Vert).'
     }));
     setFormError(null);
   };
@@ -172,15 +181,16 @@ export const ProductiviteModule: React.FC = () => {
     setNewShift(prev => ({
       ...prev,
       heuresPlanifiees: 8,
+      heuresPause: 1,
       heuresArret: 0.5,
       motifArret: 'Nettoyage buses séchoir (30 min)',
-      quantiteTotaleFabriquee: 13600,
-      quantiteConforme: 12500,
-      quantiteNonConforme: 1100,
-      quantiteMiseEnRebut: 1100,
+      quantiteTotaleFabriquee: 11050,
+      quantiteConforme: 10150,
+      quantiteNonConforme: 900,
+      quantiteMiseEnRebut: 900,
       quantiteReutilisable: 0,
-      papierCartonConsommeKg: 400,
-      observations: 'Scénario Test 2 CDC : Rebut critique 8.09% (> 5% Rouge). Dérive séchoir tunnel.'
+      papierCartonConsommeKg: 325,
+      observations: 'Scénario Test 2 : 6.5h effectives. Rebut critique 8.14% (> 5% Rouge). Dérive séchoir tunnel.'
     }));
     setFormError(null);
   };
@@ -218,7 +228,7 @@ export const ProductiviteModule: React.FC = () => {
     const prod = products.find(p => p.id === newShift.produitId) || products[0];
     const fardeaux = Math.floor(conforme / (prod?.quantiteParFardeau || 100));
     const cadenceReelle = Math.round(total / shiftHeuresFonc);
-    const dispo = Number(((shiftHeuresFonc / newShift.heuresPlanifiees) * 100).toFixed(1));
+    const dispo = Number(((shiftHeuresFonc / (shiftHeuresMachineDispo || 7)) * 100).toFixed(1));
     const perf = Number(((cadenceReelle / CADENCE_REELLE_CIBLE) * 100).toFixed(1));
     const qualite = Number(((conforme / (total || 1)) * 100).toFixed(1));
     const trs = Number(((dispo * perf * qualite) / 10000).toFixed(1));
@@ -240,6 +250,7 @@ export const ProductiviteModule: React.FC = () => {
       heureDemarrage: newShift.heureDemarrage,
       heureArret: newShift.heureArret,
       heuresPlanifiees: newShift.heuresPlanifiees,
+      heuresPause: newShift.heuresPause,
       heuresFonctionnement: shiftHeuresFonc,
       heuresArret: Number(newShift.heuresArret) || 0,
       motifArret: newShift.motifArret,
@@ -753,20 +764,19 @@ export const ProductiviteModule: React.FC = () => {
       {activeTab === 'SUIVI_JOURNALIER' && (
         <div className="space-y-6">
           
-          {/* Barre de filtres et d'actions */}
+          {/* Barre d'information organisation & filtres */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-500">Filtrer par :</span>
-              <select
-                value={selectedShiftFilter}
-                onChange={e => setSelectedShiftFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700"
-              >
-                <option value="TOUS">Tous les Quarts</option>
-                <option value="MATIN_06H_14H">Poste Unique 8h/jour (06h - 14h / 08h - 16h)</option>
-                <option value="SOIR_14H_22H">Quart Soir (Optionnel / Débordement)</option>
-                <option value="NUIT_22H_06H">Quart Nuit (Optionnel)</option>
-              </select>
+              <span className="text-xs font-bold text-slate-500">Organisation usine :</span>
+              <div className="px-3 py-1.5 bg-amber-50 border border-amber-300/80 rounded-xl text-xs font-bold text-amber-950 flex flex-wrap items-center gap-2 shadow-xs">
+                <span className="font-black text-amber-900">⭐ 1 Seul Shift (8h • Pause 1h)</span>
+                <span className="text-amber-400">•</span>
+                <span>1 Seule Équipe</span>
+                <span className="text-amber-400">•</span>
+                <span>1 Seule Ligne Shuliy</span>
+                <span className="text-amber-400">•</span>
+                <span className="text-slate-700">Du Lundi au Samedi</span>
+              </div>
 
               <select
                 value={selectedStatusFilter}
@@ -820,14 +830,15 @@ export const ProductiviteModule: React.FC = () => {
                             <div className="text-[10px] text-slate-400 font-normal">{s.date}</div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="font-bold text-slate-700">
-                              {s.shift === 'MATIN_06H_14H' ? 'Matin (06h-14h)' :
-                               s.shift === 'SOIR_14H_22H' ? 'Soir (14h-22h)' : 'Nuit (22h-06h)'}
+                            <span className="font-black text-slate-900">
+                              Shift Unique 8h
                             </span>
-                            <div className="text-[10px] text-slate-500">{s.responsableShift}</div>
+                            <div className="text-[10px] text-amber-700 font-bold">Pause 1h • Équipe Unique</div>
+                            <div className="text-[10px] text-slate-500">{s.responsableShift || 'Chef d\'équipe'}</div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="font-bold text-slate-800">{s.heuresFonctionnement}h fonc.</span>
+                            <span className="font-black text-slate-900">{s.heuresFonctionnement}h effectives</span>
+                            <div className="text-[10px] text-slate-400">sur {s.heuresPlanifiees || 8}h ({s.heuresPause ?? 1}h pause)</div>
                             {s.heuresArret > 0 && (
                               <div className="text-[10px] text-red-600 font-semibold">
                                 {s.heuresArret}h arrêt ({s.motifArret || 'Non précisé'})
@@ -1818,11 +1829,21 @@ export const ProductiviteModule: React.FC = () => {
               {/* 1. Informations Générales & Temps */}
               <div>
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-2.5">
-                  1. Identification du Quart & Données de Temps
+                  1. Identification du Shift & Données de Temps (Lundi au Samedi)
                 </h4>
+
+                {/* Bannière de cadrage industriel */}
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black uppercase">Standard Usine</span>
+                    <span className="font-black">1 Seul Shift (8h • Pause 1h) · 1 Seule Équipe · 1 Seule Ligne Shuliy</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-amber-800">Rythme : Du Lundi au Samedi (6j/sem)</span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Date effective</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Date effective (Lundi au Samedi)</label>
                     <input
                       type="date"
                       value={newShift.date}
@@ -1832,19 +1853,16 @@ export const ProductiviteModule: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Équipe / Poste (Organisation : 1 Shift unique 8h/j • 6j/sem)</label>
-                    <select
-                      value={newShift.shift}
-                      onChange={e => setNewShift({ ...newShift, shift: e.target.value as ShiftType })}
-                      className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-bold"
-                    >
-                      <option value="MATIN_06H_14H">⭐ Poste Unique Standard 8h/j (06h - 14h / 08h - 16h)</option>
-                      <option value="SOIR_14H_22H">Quart Soir Extraordinaire (14h - 22h)</option>
-                      <option value="NUIT_22H_06H">Quart Nuit Extraordinaire (22h - 06h)</option>
-                    </select>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Shift de Travail (Unique)</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value="⭐ Shift Unique 8h (08h00 - 16h00 • Pause 1h)"
+                      className="w-full text-xs p-2.5 rounded-xl border border-amber-300 bg-amber-50/70 font-black text-amber-950 cursor-not-allowed"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Responsable Quart</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Équipe & Responsable (Équipe Unique)</label>
                     <input
                       type="text"
                       value={newShift.responsableShift}
@@ -1855,9 +1873,9 @@ export const ProductiviteModule: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mt-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Heure Démarrage</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Démarrage (8h total)</label>
                     <input
                       type="time"
                       value={newShift.heureDemarrage}
@@ -1866,7 +1884,7 @@ export const ProductiviteModule: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Heure d'Arrêt</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Fin de Shift</label>
                     <input
                       type="time"
                       value={newShift.heureArret}
@@ -1875,20 +1893,35 @@ export const ProductiviteModule: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Heures Arrêt Machine</label>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Pause Repas / Repos</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="4"
+                      value={newShift.heuresPause}
+                      onChange={e => setNewShift({ ...newShift, heuresPause: Number(e.target.value) })}
+                      className="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white font-bold"
+                    />
+                    <span className="text-[10px] text-slate-400">1h réglementaire</span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Arrêts Machine Imprévus</label>
                     <input
                       type="number"
                       step="0.1"
                       min="0"
-                      max="8"
+                      max="7"
                       value={newShift.heuresArret}
                       onChange={e => setNewShift({ ...newShift, heuresArret: Number(e.target.value) })}
                       className="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white font-bold"
                     />
+                    <span className="text-[10px] text-slate-400">Pannes ou bourrages</span>
                   </div>
-                  <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
-                    <span className="text-[10px] text-slate-500 font-bold block">Heures Effectives :</span>
-                    <span className="text-sm font-black text-indigo-700">{shiftHeuresFonc} heures</span>
+                  <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-200 flex flex-col justify-center">
+                    <span className="text-[10px] text-indigo-700 font-bold block">Production Machine :</span>
+                    <span className="text-sm font-black text-indigo-900">{shiftHeuresFonc}h nettes</span>
+                    <span className="text-[9px] text-indigo-600 font-medium">8h - 1h pause - {newShift.heuresArret}h</span>
                   </div>
                 </div>
               </div>
@@ -2348,12 +2381,20 @@ export const ProductiviteModule: React.FC = () => {
             </div>
             <div className="mt-4 space-y-2 text-xs">
               <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Date :</span>
-                <strong>{viewingShift.date} ({viewingShift.shift})</strong>
+                <span className="text-slate-500">Date & Organisation :</span>
+                <strong>{viewingShift.date} · Shift Unique 8h (Pause 1h)</strong>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Responsable :</span>
-                <strong>{viewingShift.responsableShift}</strong>
+                <span className="text-slate-500">Ligne de Production :</span>
+                <strong>{viewingShift.ligneProduction || 'Ligne Unique Shuliy 4 Faces'}</strong>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-500">Équipe & Responsable :</span>
+                <strong>{viewingShift.responsableShift || 'Équipe Unique (Amadou Bâ)'}</strong>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-500">Temps Machine :</span>
+                <strong>{viewingShift.heuresPlanifiees || 8}h présence (Pause {viewingShift.heuresPause ?? 1}h) → {viewingShift.heuresFonctionnement}h nettes</strong>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-50">
                 <span className="text-slate-500">Production Conforme :</span>

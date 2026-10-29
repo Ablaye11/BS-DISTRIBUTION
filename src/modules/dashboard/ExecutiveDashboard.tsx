@@ -526,7 +526,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
   // 1. Cadence et Production par shift
   const chartShiftsData = useMemo(() => {
     return filteredShifts.slice(-8).map(s => ({
-      name: `${s.date.slice(5)} (${s.shift === 'MATIN_06H_14H' ? 'Matin' : s.shift === 'SOIR_14H_22H' ? 'Soir' : 'Nuit'})`,
+      name: `${s.date.slice(5)} (Shift 8h)`,
       conformes: s.alvéolesConformes,
       rebuts: s.rebutsKilos ? Math.round(s.rebutsKilos * 35) : Math.round(s.alvéolesConformes * 0.03),
       cadenceReelle: s.cadenceHoraireReelle,

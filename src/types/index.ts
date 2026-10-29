@@ -243,12 +243,12 @@ export interface ProductionShiftRecord {
   produitId: string;
   produitNom: string;
   
-  // Temps industriel (Section 5.1)
-  heureDemarrage?: string; // ex: 06:00
-  heureArret?: string; // ex: 14:00
-  heuresPlanifiees: number; // ex: 8h
-  heuresFonctionnement: number; // Calculées (Heures Planifiées - Heures Arrêt)
-  heuresArret: number; // ex: 0.8h
+  heureDemarrage?: string; // ex: 08:00
+  heureArret?: string; // ex: 16:00
+  heuresPlanifiees: number; // 8h de présence totale (Lundi au Samedi)
+  heuresPause?: number; // 1h de pause réglementaire
+  heuresFonctionnement: number; // Calculées (Heures Planifiées - Heures Pause - Heures Arrêt)
+  heuresArret: number; // Arrêts machine non planifiés
   motifArret?: string; // ex: Bourrage séchoir, nettoyage tamis
   natureArret?: string;
 
