@@ -163,6 +163,11 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
   const [newPriceValue, setNewPriceValue] = useState<number>(650);
   const [motifPriceChange, setMotifPriceChange] = useState<string>('Ajustement coût officiel');
 
+  // ─── Filtre par Bouton d'Additif pour le Journal des Entrées & Sorties ────
+  const [selectedJournalAdditifId, setSelectedJournalAdditifId] = useState<string>('TOUS');
+  const [journalTypeFilter, setJournalTypeFilter] = useState<'TOUS' | 'ENTREE_ACHAT' | 'SORTIE_PRODUCTION'>('TOUS');
+  const [journalSearchQuery, setJournalSearchQuery] = useState<string>('');
+
   // Formulaire Entrée Additif
   const [additifEntreeForm, setAdditifEntreeForm] = useState({
     date: todayStr,
@@ -277,6 +282,100 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
   // Synthèse globale de tous les additifs
   const valeurGlobaleTousAdditifsFCFA = listeAdditifs.reduce((sum, a) => sum + (a.stockActuel * (a.coutMoyenAchatFCFA || 650)), 0);
   const totalKgLitresTousAdditifs = listeAdditifs.reduce((sum, a) => sum + a.stockActuel, 0);
+
+  // ─── Journal des Additifs : Boutons, Filtrage et Totaux Dédiés ───────────
+  const JOURNAL_ADDITIF_BUTTONS = [
+    { id: 'TOUS', label: 'Tous les Additifs', shortLabel: 'Tous', icon: '📦', color: 'indigo' },
+    { id: 'mp-eau-08', label: '1. Eau de Procédé', shortLabel: '1. Eau (m³)', icon: '💧', color: 'sky' },
+    { id: 'mp-akd-03', label: '2. AKD Encollage', shortLabel: '2. AKD (kg)', icon: '🧪', color: 'blue' },
+    { id: 'mp-amidon-cat-04', label: '3. Amidon Cationique', shortLabel: '3. Amidon (kg)', icon: '🌾', color: 'amber' },
+    { id: 'mp-cmc-05', label: '4. CMC (E466)', shortLabel: '4. CMC (kg)', icon: '🧬', color: 'purple' },
+    { id: 'mp-talc-06', label: '5. Talc Industriel', shortLabel: '5. Talc (kg)', icon: '⛰️', color: 'emerald' },
+    { id: 'mp-defoamer-07', label: '6. Anti-Mousse Defoamer', shortLabel: '6. Anti-Mousse (L)', icon: '🫧', color: 'rose' },
+  ];
+
+  // Helper de reconnaissance robuste de l'additif pour chaque mouvement d'intrant
+  const getAdditifKeyForMovement = (m: IntrantStockMovement): string => {
+    const id = (m.intrantId || '').toLowerCase();
+    const nom = (m.intrantNom || '').toLowerCase();
+    if (id.includes('eau') || nom.includes('eau')) return 'mp-eau-08';
+    if (id.includes('akd') || nom.includes('akd')) return 'mp-akd-03';
+    if (id.includes('amidon') || nom.includes('amidon') || nom.includes('starch')) return 'mp-amidon-cat-04';
+    if (id.includes('cmc') || nom.includes('cmc') || nom.includes('carboxym')) return 'mp-cmc-05';
+    if (id.includes('talc') || nom.includes('talc')) return 'mp-talc-06';
+    if (id.includes('defoam') || nom.includes('defoam') || nom.includes('mousse')) return 'mp-defoamer-07';
+    return m.intrantId || '';
+  };
+
+  // Statistiques et compteurs de mouvements par additif pour les badges des boutons
+  const countsPerAdditif = useMemo(() => {
+    const counts: Record<string, { total: number; entrees: number; sorties: number; qteEntrees: number; qteSorties: number }> = {
+      'TOUS': { total: intrantMovements.length, entrees: 0, sorties: 0, qteEntrees: 0, qteSorties: 0 }
+    };
+
+    ADDITIFS_ORDER.forEach(id => {
+      counts[id] = { total: 0, entrees: 0, sorties: 0, qteEntrees: 0, qteSorties: 0 };
+    });
+
+    intrantMovements.forEach(m => {
+      const isEntree = m.type === 'ENTREE_ACHAT';
+      const isSortie = m.type === 'SORTIE_PRODUCTION';
+      if (isEntree) {
+        counts['TOUS'].entrees++;
+        counts['TOUS'].qteEntrees += (m.quantite || 0);
+      } else if (isSortie) {
+        counts['TOUS'].sorties++;
+        counts['TOUS'].qteSorties += (m.quantite || 0);
+      }
+
+      const key = getAdditifKeyForMovement(m);
+      if (counts[key]) {
+        counts[key].total++;
+        if (isEntree) {
+          counts[key].entrees++;
+          counts[key].qteEntrees += (m.quantite || 0);
+        } else if (isSortie) {
+          counts[key].sorties++;
+          counts[key].qteSorties += (m.quantite || 0);
+        }
+      }
+    });
+
+    return counts;
+  }, [intrantMovements]);
+
+  // Additif actif sélectionné dans le Journal
+  const activeJournalAdditif = useMemo(() => {
+    if (selectedJournalAdditifId === 'TOUS') return null;
+    return listeAdditifs.find(a => a.id === selectedJournalAdditifId) || null;
+  }, [listeAdditifs, selectedJournalAdditifId]);
+
+  // Liste filtrée des mouvements d'additifs pour le tableau
+  const filteredIntrantMovements = useMemo(() => {
+    return intrantMovements.filter(m => {
+      if (selectedJournalAdditifId !== 'TOUS') {
+        const key = getAdditifKeyForMovement(m);
+        if (key !== selectedJournalAdditifId && m.intrantId !== selectedJournalAdditifId) {
+          return false;
+        }
+      }
+      if (journalTypeFilter !== 'TOUS' && m.type !== journalTypeFilter) {
+        return false;
+      }
+      if (journalSearchQuery.trim()) {
+        const q = journalSearchQuery.toLowerCase();
+        const matchNum = (m.numeroMouvement || '').toLowerCase().includes(q);
+        const matchNom = (m.intrantNom || '').toLowerCase().includes(q);
+        const matchTiers = (m.fournisseurNom || m.ligneProduction || '').toLowerCase().includes(q);
+        const matchUser = (m.enregistrePar || '').toLowerCase().includes(q);
+        const matchDate = (m.date || '').includes(q);
+        if (!matchNum && !matchNom && !matchTiers && !matchUser && !matchDate) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [intrantMovements, selectedJournalAdditifId, journalTypeFilter, journalSearchQuery]);
 
   // ─── Actions Métier Matière Première ───────────────────────────────────────
   
@@ -2235,19 +2334,237 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
             </div>
           </div>
 
-          {/* Historique des Mouvements d'Additifs */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          {/* ══════════════════════════════════════════════════════════════════════
+              JOURNAL DES ENTRÉES & SORTIES D'ADDITIFS (FILTRAGE PAR BOUTON D'ADDITIF)
+              ══════════════════════════════════════════════════════════════════════ */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
+            
+            {/* Entête du Journal & Description */}
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 via-white to-indigo-50/30">
               <div>
-                <h3 className="text-base font-black text-slate-900">
-                  Journal des Entrées & Sorties d'Additifs
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Traçabilité des approvisionnements fournisseurs et dosages en production
-                </p>
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm">
+                    <History className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                      Journal des Entrées & Sorties d'Additifs
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Consultez l'historique complet ou filtrez en un clic par additif pour voir toutes ses entrées et sorties
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Indicateur de filtre actif */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5">
+                  <span>Vue :</span>
+                  <strong className="text-indigo-700">
+                    {selectedJournalAdditifId === 'TOUS' ? 'Tous les additifs' : (ADDITIF_LABEL[selectedJournalAdditifId] || selectedJournalAdditifId)}
+                  </strong>
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-black">
+                    {filteredIntrantMovements.length} mvt(s)
+                  </span>
+                </span>
               </div>
             </div>
 
+            {/* ─── BARRE DES BOUTONS CLIQUABLES SUR CHAQUE ADDITIF ─────────────── */}
+            <div className="p-4 sm:p-5 bg-slate-50/70 border-b border-slate-200/80">
+              <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Sélectionner un Additif pour afficher ses Entrées & Sorties :</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {JOURNAL_ADDITIF_BUTTONS.map(btn => {
+                  const isSelected = selectedJournalAdditifId === btn.id;
+                  const countObj = countsPerAdditif[btn.id] || { total: 0, entrees: 0, sorties: 0 };
+
+                  return (
+                    <button
+                      key={btn.id}
+                      type="button"
+                      onClick={() => setSelectedJournalAdditifId(btn.id)}
+                      className={`group px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/25 scale-[1.02]'
+                          : 'bg-white hover:bg-slate-100/90 text-slate-700 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-sm">{btn.icon}</span>
+                      <span>{btn.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black transition-colors ${
+                        isSelected 
+                          ? 'bg-white/20 text-white' 
+                          : countObj.total > 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        {countObj.total}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ─── FICHE DE SYNTHÈSE SI UN ADDITIF PARTICULIER EST SÉLECTIONNÉ ─── */}
+            {activeJournalAdditif && (
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-500/10 via-white to-emerald-500/10 border-b border-slate-200">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  
+                  {/* Identité additif */}
+                  <div className="flex items-start gap-3">
+                    <span className="p-2.5 rounded-2xl bg-indigo-600 text-white font-black text-lg shadow-sm">
+                      {selectedJournalAdditifId === 'mp-eau-08' ? '💧' :
+                       selectedJournalAdditifId === 'mp-akd-03' ? '🧪' :
+                       selectedJournalAdditifId === 'mp-amidon-cat-04' ? '🌾' :
+                       selectedJournalAdditifId === 'mp-cmc-05' ? '🧬' :
+                       selectedJournalAdditifId === 'mp-talc-06' ? '⛰️' : '🫧'}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md">
+                          Additif Actuel
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono font-bold">
+                          {activeJournalAdditif.reference}
+                        </span>
+                      </div>
+                      <h4 className="text-sm sm:text-base font-black text-slate-900 mt-0.5">
+                        {activeJournalAdditif.nom}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Fournisseur habituel : <span className="font-semibold text-slate-700">{activeJournalAdditif.fournisseurPrincipal}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3 mini cartes métriques pour cet additif */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                    <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-emerald-200 shadow-xs">
+                      <span className="text-[10px] font-bold text-emerald-700 block">Entrées Réceptions</span>
+                      <strong className="text-xs sm:text-sm font-black text-emerald-800">
+                        +{countsPerAdditif[activeJournalAdditif.id]?.qteEntrees || 0} {activeJournalAdditif.unite}
+                      </strong>
+                      <span className="text-[10px] text-emerald-600 block">
+                        ({countsPerAdditif[activeJournalAdditif.id]?.entrees || 0} bon(s))
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-amber-200 shadow-xs">
+                      <span className="text-[10px] font-bold text-amber-800 block">Sorties Dosage</span>
+                      <strong className="text-xs sm:text-sm font-black text-amber-900">
+                        -{countsPerAdditif[activeJournalAdditif.id]?.qteSorties || 0} {activeJournalAdditif.unite}
+                      </strong>
+                      <span className="text-[10px] text-amber-700 block">
+                        ({countsPerAdditif[activeJournalAdditif.id]?.sorties || 0} dosage(s))
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-indigo-200 shadow-xs">
+                      <span className="text-[10px] font-bold text-indigo-700 block">Stock Disponible</span>
+                      <strong className="text-xs sm:text-sm font-black text-indigo-950">
+                        {activeJournalAdditif.stockActuel} {activeJournalAdditif.unite}
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block">
+                        PMP: {(activeJournalAdditif.coutMoyenAchatFCFA || 650).toLocaleString()} FCFA
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions directes pour cet additif */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAdditifId(activeJournalAdditif.id);
+                        setShowAdditifEntreeModal(true);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Achat {activeJournalAdditif.nom.split(' ')[0]}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAdditifId(activeJournalAdditif.id);
+                        setShowAdditifSortieModal(true);
+                      }}
+                      className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                      <span>- Dosage {activeJournalAdditif.nom.split(' ')[0]}</span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* ─── FILTRES SECONDAIRES (TYPE & RECHERCHE) ───────────────────────── */}
+            <div className="p-3.5 sm:p-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-400 mr-1">Filtrer le type :</span>
+                <button
+                  type="button"
+                  onClick={() => setJournalTypeFilter('TOUS')}
+                  className={`px-3 py-1 rounded-xl font-bold transition-all ${
+                    journalTypeFilter === 'TOUS'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Tous les flux ({filteredIntrantMovements.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJournalTypeFilter('ENTREE_ACHAT')}
+                  className={`px-3 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                    journalTypeFilter === 'ENTREE_ACHAT'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                  }`}
+                >
+                  <span>📥 Entrées Achat uniquement</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJournalTypeFilter('SORTIE_PRODUCTION')}
+                  className={`px-3 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                    journalTypeFilter === 'SORTIE_PRODUCTION'
+                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      : 'bg-amber-50 text-amber-900 hover:bg-amber-100'
+                  }`}
+                >
+                  <span>📤 Sorties Dosage uniquement</span>
+                </button>
+              </div>
+
+              {/* Recherche textuelle */}
+              <div className="relative min-w-[220px]">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={journalSearchQuery}
+                  onChange={e => setJournalSearchQuery(e.target.value)}
+                  placeholder="Rechercher n° bon, date, tiers..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+                {journalSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setJournalSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ─── TABLEAU DU JOURNAL D'ADDITIFS ──────────────────────────────── */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-100">
@@ -2262,51 +2579,141 @@ export const StockMatieresPremieresAdditifsModule: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {intrantMovements.length === 0 ? (
+                  {filteredIntrantMovements.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400">
-                        Aucun mouvement d'additif enregistré.
+                      <td colSpan={7} className="py-12 text-center">
+                        <div className="max-w-md mx-auto space-y-3">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center font-bold text-xl">
+                            {activeJournalAdditif ? '🧪' : '📦'}
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-bold text-slate-800 text-sm">
+                              Aucun mouvement enregistré pour {activeJournalAdditif ? activeJournalAdditif.nom : 'cette sélection'}.
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Enregistrez une entrée de commande fournisseur ou effectuez une sortie pour le dosage au pulpeur.
+                            </p>
+                          </div>
+                          {activeJournalAdditif && (
+                            <div className="flex items-center justify-center gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAdditifId(activeJournalAdditif.id);
+                                  setShowAdditifEntreeModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors"
+                              >
+                                + Enregistrer une Entrée Achat
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAdditifId(activeJournalAdditif.id);
+                                  setShowAdditifSortieModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                              >
+                                - Enregistrer une Sortie Dosage
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (
-                    intrantMovements.map(m => (
-                      <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 px-5">
-                          <span className="font-mono font-bold text-slate-900 text-[11px]">{m.numeroMouvement}</span>
-                          <div className="text-[10px] text-slate-400">{m.date}</div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                            m.type === 'ENTREE_ACHAT' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {m.type === 'ENTREE_ACHAT' ? '📥 Entrée Achat' : '📤 Sortie Dosage'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-slate-800">
-                          {m.intrantNom}
-                        </td>
-                        <td className="py-3.5 px-4 text-center font-black text-sm">
-                          <span className={m.type === 'ENTREE_ACHAT' ? 'text-emerald-700' : 'text-amber-800'}>
-                            {m.type === 'ENTREE_ACHAT' ? `+${m.quantite} ${m.unite}` : `-${m.quantite} ${m.unite}`}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600">
-                          {m.fournisseurNom || m.ligneProduction || 'Cuve Homogénéisation'}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700">
-                          {m.enregistrePar}
-                        </td>
-                        <td className="py-3.5 px-5 text-center">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            Validé
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+                    filteredIntrantMovements.map(m => {
+                      const isEntree = m.type === 'ENTREE_ACHAT';
+                      const additifKey = getAdditifKeyForMovement(m);
+                      const labelCourt = ADDITIF_LABEL[additifKey];
+
+                      return (
+                        <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-5">
+                            <span className="font-mono font-bold text-slate-900 text-[11px] block">{m.numeroMouvement}</span>
+                            <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                              <Calendar className="w-3 h-3 text-slate-400" />
+                              <span>{m.date} {m.heure ? `à ${m.heure}` : ''}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black inline-flex items-center gap-1.5 shadow-2xs ${
+                              isEntree ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-900 border border-amber-200'
+                            }`}>
+                              <span>{isEntree ? '📥 Entrée Achat' : '📤 Sortie Dosage'}</span>
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-slate-900">
+                              {m.intrantNom}
+                            </div>
+                            {labelCourt && (
+                              <div className="text-[10px] text-indigo-700 font-semibold mt-0.5">
+                                • {labelCourt}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={`text-sm font-black inline-block px-2.5 py-0.5 rounded-lg ${
+                              isEntree ? 'text-emerald-700 bg-emerald-50' : 'text-amber-800 bg-amber-50'
+                            }`}>
+                              {isEntree ? `+${m.quantite} ${m.unite}` : `-${m.quantite} ${m.unite}`}
+                            </span>
+                            {m.prixUnitaireFCFA && (
+                              <div className="text-[10px] text-slate-400 mt-0.5">
+                                {m.prixUnitaireFCFA.toLocaleString()} FCFA / {m.unite}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-600">
+                            <div className="font-medium text-slate-800">
+                              {m.fournisseurNom || m.ligneProduction || 'Cuve Homogénéisation'}
+                            </div>
+                            {m.paysProvenance && (
+                              <div className="text-[10px] text-slate-400">
+                                Provenance : {m.paysProvenance}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-700">
+                            <div className="flex items-center gap-1.5">
+                              <User className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span className="font-semibold">{m.enregistrePar}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-5 text-center">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              ✓ Validé
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
+
+            {/* Pied de tableau récapitulatif */}
+            <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 gap-2">
+              <div>
+                Affichage de <strong className="text-slate-800">{filteredIntrantMovements.length}</strong> mouvement(s)
+                {selectedJournalAdditifId !== 'TOUS' && (
+                  <span> pour <strong className="text-indigo-700">{ADDITIF_LABEL[selectedJournalAdditifId] || selectedJournalAdditifId}</strong></span>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-[11px]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>Entrées Achat</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span>Sorties Dosage</span>
+                </span>
+              </div>
+            </div>
+
           </div>
 
         </div>
