@@ -5,7 +5,7 @@
  */
 
 import jsPDF from 'jspdf';
-import { Invoice } from '../types';
+import { Invoice, ProductionShiftRecord } from '../types';
 
 // ── Types ────────────────────────────────────────────────────────────
 export interface PdfTableColumn {
@@ -978,4 +978,273 @@ export function exportBonSortieProductionPdf(sortie: {
   pdf.text('BS DISTRIBUTION SUARL — Document interne officiel scellé et auditable • Logiciel ERP/MES v1.0', pageW / 2, pageH - 8, { align: 'center' });
 
   pdf.save(`BON_SORTIE_${sortie.numeroDemande || 'PROD'}.pdf`);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// EXPORT FICHE OFFICIELLE DE PRODUCTION JOURNALIÈRE (ATELIER SUIVIS / QUALITÉ)
+// Modèle industriel : 1 Seul Shift (8h • Pause 1h) • 6 jours / semaine • Ligne Shuliy
+// ══════════════════════════════════════════════════════════════════════════
+export function exportFicheJournalierePdf(
+  shift: ProductionShiftRecord,
+  themeHex: string = '#0f172a'
+): void {
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const marginL = 15;
+  const marginR = 15;
+  const contentW = pageW - marginL - marginR;
+
+  const [pr, pg, pb] = hexToRgb(themeHex);
+
+  // HEADER BANDEAU
+  pdf.setFillColor(pr, pg, pb);
+  pdf.rect(0, 0, pageW, 26, 'F');
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(13);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('BS ALVÉOLES SUARL', marginL, 10);
+
+  pdf.setFontSize(7.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text("Unité Industrielle de Fabrication d'Alvéoles en Pâte Moulée — Dakar / Thiès, Sénégal", marginL, 15);
+  pdf.text("Organisation usine : Shift Unique 8h (Pause 1h) • 6 jours/semaine (Lundi au Samedi) • 1 Seule Équipe", marginL, 20);
+
+  pdf.setFontSize(7);
+  pdf.text(`Généré le ${formatDate()}`, pageW - marginR, 20, { align: 'right' });
+
+  // TITRE DU DOCUMENT
+  let y = 33;
+  pdf.setTextColor(15, 23, 42);
+  pdf.setFontSize(13);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('FICHE OFFICIELLE DE PRODUCTION JOURNALIÈRE & QUALITÉ', marginL, y);
+
+  y += 5;
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(`Rapport N° ${shift.numeroRapport || shift.id}  |  Date de production : ${shift.date}  |  Statut : ${shift.statutValidation || 'VALIDE'}`, marginL, y);
+
+  // LIGNE DE SÉPARATION
+  y += 4;
+  pdf.setDrawColor(pr, pg, pb);
+  pdf.setLineWidth(0.6);
+  pdf.line(marginL, y, pageW - marginR, y);
+
+  y += 5;
+
+  // CADRE 1 : ORGANISATION DU SHIFT & HORAIRES (Shift unique 8h - Pause 1h)
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(226, 232, 240);
+  pdf.roundedRect(marginL, y, contentW, 25, 2, 2, 'FD');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('1. PARAMÈTRES DU SHIFT & GESTION DU TEMPS (MODÈLE SHIFT UNIQUE)', marginL + 3, y + 5);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(51, 65, 85);
+
+  const colW1 = contentW / 3;
+  // Col 1
+  pdf.text(`Équipe : Équipe Unique (08h00 - 16h00)`, marginL + 3, y + 11);
+  pdf.text(`Responsable : ${shift.responsableShift || 'Chef de Quart'}`, marginL + 3, y + 16);
+  pdf.text(`Ligne : ${shift.ligneProduction || 'Ligne Shuliy 4 Faces'}`, marginL + 3, y + 21);
+
+  // Col 2
+  pdf.text(`Démarrage : ${shift.heureDemarrage || '08:00'}  |  Arrêt : ${shift.heureArret || '16:00'}`, marginL + colW1, y + 11);
+  pdf.text(`Présence totale : ${shift.heuresPlanifiees || 8}h planifiées`, marginL + colW1, y + 16);
+  pdf.text(`Pause obligatoire : ${shift.heuresPause ?? 1}h (repas & repos)`, marginL + colW1, y + 21);
+
+  // Col 3
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`Arrêts non planifiés : ${shift.heuresArret || 0}h`, marginL + 2 * colW1, y + 11);
+  pdf.setTextColor(16, 185, 129);
+  pdf.text(`Temps effectif net : ${shift.heuresFonctionnement}h nettes`, marginL + 2 * colW1, y + 16);
+  pdf.setTextColor(100, 116, 139);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Motif arrêt : ${(shift.motifArret || 'Aucun arrêt').slice(0, 32)}`, marginL + 2 * colW1, y + 21);
+
+  y += 28;
+
+  // CADRE 2 : BILAN DES QUANTITÉS & INTÉGRITÉ CDC 5.1 & 5.2
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(226, 232, 240);
+  pdf.roundedRect(marginL, y, contentW, 40, 2, 2, 'FD');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('2. QUANTITÉS FABRIQUÉES & RÈGLES DE COHÉRENCE (CDC 5.1 & 5.2)', marginL + 3, y + 5);
+
+  // 4 KPI boxes
+  const kpiBoxW = (contentW - 6) / 4;
+  const kpiY = y + 8;
+  const kpiH = 14;
+
+  // Box 1 : Total Fabriqué
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(marginL + 2, kpiY, kpiBoxW - 2, kpiH, 1.5, 1.5, 'FD');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text('TOTAL FABRIQUÉ', marginL + 4, kpiY + 4);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(15, 23, 42);
+  pdf.text(`${(shift.quantiteTotaleFabriquee || shift.alvéolesConformes).toLocaleString()}`, marginL + 4, kpiY + 10.5);
+
+  // Box 2 : Conformes
+  pdf.setFillColor(240, 253, 244);
+  pdf.roundedRect(marginL + 2 + kpiBoxW, kpiY, kpiBoxW - 2, kpiH, 1.5, 1.5, 'FD');
+  pdf.setFontSize(6.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(22, 101, 52);
+  pdf.text('CONFORMES (LOTS 100)', marginL + 4 + kpiBoxW, kpiY + 4);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(21, 128, 61);
+  pdf.text(`${shift.alvéolesConformes.toLocaleString()} alv`, marginL + 4 + kpiBoxW, kpiY + 10.5);
+
+  // Box 3 : Non Conformes & Rebuts
+  pdf.setFillColor(254, 242, 242);
+  pdf.roundedRect(marginL + 2 + 2 * kpiBoxW, kpiY, kpiBoxW - 2, kpiH, 1.5, 1.5, 'FD');
+  pdf.setFontSize(6.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(153, 27, 27);
+  pdf.text('NON CONFORMES (REBUTS)', marginL + 4 + 2 * kpiBoxW, kpiY + 4);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(185, 28, 28);
+  pdf.text(`${(shift.quantiteNonConforme || 0).toLocaleString()} alv`, marginL + 4 + 2 * kpiBoxW, kpiY + 10.5);
+
+  // Box 4 : Taux de Rebut
+  const tauxRebut = shift.rebutsPourcentage || 0;
+  pdf.setFillColor(tauxRebut <= 3 ? 240 : tauxRebut <= 5 ? 254 : 254, tauxRebut <= 3 ? 253 : tauxRebut <= 5 ? 243 : 226, tauxRebut <= 3 ? 244 : tauxRebut <= 5 ? 199 : 226);
+  pdf.roundedRect(marginL + 2 + 3 * kpiBoxW, kpiY, kpiBoxW - 2, kpiH, 1.5, 1.5, 'FD');
+  pdf.setFontSize(6.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(tauxRebut <= 3 ? 22 : tauxRebut <= 5 ? 146 : 153, tauxRebut <= 3 ? 101 : tauxRebut <= 5 ? 64 : 27, tauxRebut <= 3 ? 52 : tauxRebut <= 5 ? 14 : 27);
+  pdf.text('TAUX DE REBUT (%)', marginL + 4 + 3 * kpiBoxW, kpiY + 4);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`${tauxRebut}% (${tauxRebut <= 3 ? 'Vert' : tauxRebut <= 5 ? 'Orange' : 'Rouge'})`, marginL + 4 + 3 * kpiBoxW, kpiY + 10.5);
+
+  // Détails texte sous les boxes
+  const detailY = y + 25;
+  pdf.setFontSize(7.2);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(`• Fardeaux ficelés (lots de 100) : ${shift.fardeauxEmballes || Math.floor(shift.alvéolesConformes / 100)} fardeaux prêts pour stockage`, marginL + 3, detailY);
+  pdf.text(`• Décomposition non-conformes : Rebuts pulpeur = ${shift.quantiteMiseEnRebut || 0} alv (${shift.rebutsKilos || 0} kg)  |  Réutilisables = ${shift.quantiteReutilisable || 0} alv`, marginL + 3, detailY + 4.5);
+  pdf.text(`• Matières premières : Papier consommé = ${shift.papierCartonConsommeKg} kg  |  Rendement matière = ${(shift.rendementMatiereAlvParKg || (shift.alvéolesConformes / (shift.papierCartonConsommeKg || 1))).toFixed(1)} alv/kg (Cible : 35)`, marginL + 3, detailY + 9);
+  pdf.text(`• Vérification cohérence : Total (${shift.quantiteTotaleFabriquee || shift.alvéolesConformes}) = Conformes (${shift.alvéolesConformes}) + Non conformes (${shift.quantiteNonConforme || 0}) [Règle 5.2 respectée]`, marginL + 3, detailY + 13.5);
+
+  y += 43;
+
+  // CADRE 3 : INDICATEURS INDUSTRIELS & TRS / OEE (CDC 5.6)
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(226, 232, 240);
+  pdf.roundedRect(marginL, y, contentW, 28, 2, 2, 'FD');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('3. INDICATEURS DE RENDEMENT INDUSTRIEL & TRS / OEE (SECTION 5.6)', marginL + 3, y + 5);
+
+  const kpiRowY = y + 8;
+  const colW4 = contentW / 5;
+
+  const kpis = [
+    { label: 'Cadence Réelle', val: `${shift.cadenceHoraireReelle} alv/h`, sub: 'Cible : 1 700' },
+    { label: 'Disponibilité', val: `${shift.tauxDisponibilite}%`, sub: 'Temps effectif / planifié' },
+    { label: 'Performance', val: `${shift.tauxPerformance}%`, sub: 'Cadence / Cible' },
+    { label: 'Qualité', val: `${shift.tauxQualite}%`, sub: 'Conformes / Total' },
+    { label: 'TRS / OEE', val: `${shift.trsOEE}%`, sub: 'Dispo × Perf × Qual' }
+  ];
+
+  kpis.forEach((kpi, idx) => {
+    const kx = marginL + 2 + idx * colW4;
+    pdf.setFillColor(idx === 4 ? 241 : 255, idx === 4 ? 245 : 255, idx === 4 ? 249 : 255);
+    pdf.setDrawColor(226, 232, 240);
+    pdf.roundedRect(kx, kpiRowY, colW4 - 3, 16, 1.5, 1.5, 'FD');
+    pdf.setFontSize(6.5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(kpi.label, kx + 2, kpiRowY + 4);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(idx === 4 ? 79 : 15, idx === 4 ? 70 : 23, idx === 4 ? 229 : 42);
+    pdf.text(kpi.val, kx + 2, kpiRowY + 9.5);
+    pdf.setFontSize(5.5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(148, 163, 184);
+    pdf.text(kpi.sub, kx + 2, kpiRowY + 14);
+  });
+
+  y += 31;
+
+  // CADRE 4 : OBSERVATIONS, DÉROGATION & TRAÇABILITÉ
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(226, 232, 240);
+  pdf.roundedRect(marginL, y, contentW, 20, 2, 2, 'FD');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('4. OBSERVATIONS OPÉRATIONNELLES & GESTION DES DÉROGATIONS', marginL + 3, y + 5);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(`Observations : ${shift.observations || 'Production conforme aux normes Shuliy. Aucun écart critique constaté.'}`, marginL + 3, y + 10, { maxWidth: contentW - 6 });
+
+  if (shift.derogationAccordee) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(180, 83, 9);
+    pdf.text(`⚠️ Dérogation autorisée : ${shift.motifDerogation || 'Motif renseigné par la hiérarchie'}`, marginL + 3, y + 16, { maxWidth: contentW - 6 });
+  }
+
+  y += 24;
+
+  // CADRE 5 : VISAS OFFICIELS ET SIGNATURES D'ATELIER
+  const sigBoxW = contentW / 2 - 4;
+
+  // Signataire 1 : Chef de quart / Responsable Production
+  pdf.setDrawColor(203, 213, 225);
+  pdf.roundedRect(marginL, y, sigBoxW, 32, 2, 2, 'D');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('1. CHEF DE QUART / RESPONSABLE PROD', marginL + 3, y + 5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text(`Nom : ${shift.responsableShift || 'Chef de Quart'}`, marginL + 3, y + 10);
+  pdf.text('Mention : « Certifié conforme aux relevés compteurs atelier »', marginL + 3, y + 14);
+  pdf.text('Signature & Date :', marginL + 3, y + 26);
+
+  // Signataire 2 : Directeur d'Usine / Validation
+  const sigRightX = marginL + sigBoxW + 8;
+  pdf.roundedRect(sigRightX, y, sigBoxW, 32, 2, 2, 'D');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("2. DIRECTION D'USINE / VALIDATION", sigRightX + 3, y + 5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text(`Validé par : ${shift.validePar || "Direction de l'Usine"}`, sigRightX + 3, y + 10);
+  pdf.text('Mention : « Validé — Entrée en stock et déstockage matière actés »', sigRightX + 3, y + 14);
+  pdf.text('Signature & Date :', sigRightX + 3, y + 26);
+
+  // FOOTER
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(148, 163, 184);
+  pdf.text("BS DISTRIBUTION SUARL — Document Officiel d'Atelier Scellé & Auditable • Logiciel ERP/MES v1.0", pageW / 2, pageH - 6, { align: 'center' });
+
+  pdf.save(`FICHE_PRODUCTION_${shift.numeroRapport || shift.id}.pdf`);
 }

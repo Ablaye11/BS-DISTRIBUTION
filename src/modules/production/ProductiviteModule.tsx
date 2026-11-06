@@ -7,14 +7,14 @@ import {
 } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { ExportPdfButton } from '../../components/common/ExportPdfButton';
-import { exportProductionPdf } from '../../services/pdfExport';
+import { exportProductionPdf, exportFicheJournalierePdf } from '../../services/pdfExport';
 import { 
   Gauge, TrendingUp, AlertTriangle, CheckCircle2, Clock, 
   Layers, Zap, Droplets, RefreshCw, Plus, Filter, Factory,
   BarChart3, Activity, Award, ShieldAlert, Check, X, Wrench, Bug, FileText,
   ClipboardList, Power, WashingMachine, ShieldCheck, AlertOctagon, Unlock, BookOpen,
   Calendar, CheckSquare, Search, ArrowRight, Eye, Shield, AlertCircle, Info, ChevronDown,
-  Boxes, PackageCheck, Truck, Package
+  Boxes, PackageCheck, Truck, Package, Printer, Download
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
@@ -131,6 +131,99 @@ export const ProductiviteModule: React.FC = () => {
   });
 
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Détection automatique des arrêts/incidents déclarés le jour même pour le Shift Unique (8h)
+  const incidentsDuJour = useMemo(() => {
+    return machineIncidents.filter(inc => inc.date === newShift.date);
+  }, [machineIncidents, newShift.date]);
+
+  const totalHeuresArretDuJour = useMemo(() => {
+    return Number(incidentsDuJour.reduce((acc, inc) => acc + (inc.dureeArretHeures || (inc.dureeArretMinutes / 60) || 0), 0).toFixed(2));
+  }, [incidentsDuJour]);
+
+  const handleImportDayIncidents = () => {
+    if (incidentsDuJour.length === 0) return;
+    const total = totalHeuresArretDuJour;
+    const motifs = incidentsDuJour.map(inc => `${inc.equipementConcerne}: ${inc.causeIdentifiee || inc.natureIncident} (${inc.dureeArretMinutes} min)`).join('; ');
+    setNewShift(prev => ({
+      ...prev,
+      heuresArret: total,
+      motifArret: motifs
+    }));
+  };
+
+  // Export CSV complet de tous les relevés de production (CDC & Contrôle de gestion)
+  const exportShiftsToCsv = () => {
+    if (shifts.length === 0) return;
+    const headers = [
+      'N° Rapport',
+      'Date',
+      'Organisation Shift',
+      'Responsable / Quart',
+      'Heures Planifiees',
+      'Pause (Heures)',
+      'Heures Effectives Nettes',
+      'Heures Arret',
+      'Motif Arret',
+      'Total Fabrique',
+      'Conformes (Alveoles)',
+      'Fardeaux (100)',
+      'Non Conformes',
+      'Mise en Rebut',
+      'Reutilisable',
+      'Taux Rebut (%)',
+      'Papier Consomme (Kg)',
+      'Rendement Matiere (Alv/Kg)',
+      'Cadence Reelle (Alv/h)',
+      'Disponibilite (%)',
+      'Performance (%)',
+      'Qualite (%)',
+      'TRS OEE (%)',
+      'Statut Validation',
+      'Valide Par',
+      'Date Validation'
+    ];
+
+    const rows = shifts.map(s => [
+      s.numeroRapport || s.id,
+      s.date,
+      'Shift Unique 8h (Pause 1h - 6j/7)',
+      `"${(s.responsableShift || 'Équipe Unique').replace(/"/g, '""')}"`,
+      s.heuresPlanifiees || 8,
+      s.heuresPause ?? 1,
+      s.heuresFonctionnement,
+      s.heuresArret || 0,
+      `"${(s.motifArret || '').replace(/"/g, '""')}"`,
+      s.quantiteTotaleFabriquee || s.alvéolesConformes,
+      s.alvéolesConformes,
+      s.fardeauxEmballes || Math.floor(s.alvéolesConformes / 100),
+      s.quantiteNonConforme || 0,
+      s.quantiteMiseEnRebut || 0,
+      s.quantiteReutilisable || 0,
+      s.rebutsPourcentage || 0,
+      s.papierCartonConsommeKg || 0,
+      s.rendementMatiereAlvParKg || (s.alvéolesConformes / (s.papierCartonConsommeKg || 1)).toFixed(1),
+      s.cadenceHoraireReelle,
+      s.tauxDisponibilite,
+      s.tauxPerformance,
+      s.tauxQualite,
+      s.trsOEE,
+      s.statutValidation || 'VALIDE',
+      `"${(s.validePar || '').replace(/"/g, '""')}"`,
+      s.dateValidation || ''
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `releves_production_bs_distribution_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Calculs dynamiques : 8h présence totale - 1h de pause obligatoire - arrêts machines imprévus
   const shiftHeuresMachineDispo = Math.max(0, (newShift.heuresPlanifiees || 8) - (newShift.heuresPause || 1));
@@ -334,6 +427,15 @@ export const ProductiviteModule: React.FC = () => {
       }
     }
 
+    // Rattachage officiel des incidents du jour à ce rapport de production
+    if (incidentsDuJour.length > 0) {
+      for (const inc of incidentsDuJour) {
+        if (!inc.rapportProductionId) {
+          await db.machineIncidents.update(inc.id, { rapportProductionId: reportId });
+        }
+      }
+    }
+
     // Traçabilité Audit Log (Règle CDC)
     await db.auditLogs.add({
       id: `audit-prod-${Date.now()}`,
@@ -344,6 +446,40 @@ export const ProductiviteModule: React.FC = () => {
       entite: 'PRODUCTION',
       description: `Rapport ${reportId} enregistré au statut ${targetStatus}. ${conforme} conformes, ${nonConforme} non conformes (${formTauxRebut}% rebut).`
     });
+
+    // Alertes push instantanées dans la cloche du Directeur d'Usine
+    if (formStatutRebut === 'ROUGE' || formTauxRebut > (factorySettings?.seuilAlerteTauxRebutMax ?? 5.0)) {
+      await db.notifications.add({
+        id: `notif-rebut-${Date.now()}`,
+        type: 'production',
+        title: `🚨 Taux de Rebut Critique : ${formTauxRebut}% (Shift du ${newShift.date})`,
+        message: `Le rapport ${reportId} affiche un taux de rebut critique de ${formTauxRebut}% (> 5%). ${nonConforme} alvéoles non conformes. Contrôler les buses et le séchoir.`,
+        date: new Date().toISOString(),
+        isRead: false
+      });
+    }
+
+    if ((Number(newShift.heuresArret) || 0) >= (factorySettings?.seuilAlerteArretMachineProlongeHeures ?? 1.5)) {
+      await db.notifications.add({
+        id: `notif-arret-${Date.now()}`,
+        type: 'production',
+        title: `⚠️ Arrêt Machine Prolongé : ${newShift.heuresArret}h (Shift du ${newShift.date})`,
+        message: `Un temps d'arrêt machine imprévu de ${newShift.heuresArret}h a été consigné sur le shift unique. Motif : ${newShift.motifArret || 'Non précisé'}.`,
+        date: new Date().toISOString(),
+        isRead: false
+      });
+    }
+
+    if (cadenceReelle < (factorySettings?.seuilAlerteCadenceMin ?? 1500) && cadenceReelle > 0) {
+      await db.notifications.add({
+        id: `notif-cadence-${Date.now()}`,
+        type: 'production',
+        title: `📉 Cadence Usine Faible : ${cadenceReelle} alv/h (Cible: 1 700)`,
+        message: `La cadence réelle (${cadenceReelle} alv/h) sur le shift du ${newShift.date} est inférieure au seuil d'alerte (1 500 alv/h).`,
+        date: new Date().toISOString(),
+        isRead: false
+      });
+    }
 
     setShowShiftModal(false);
   };
@@ -461,6 +597,19 @@ export const ProductiviteModule: React.FC = () => {
     };
 
     await db.qualityControls.add(record);
+
+    // Alerte automatique si dérive qualité critique (> 5%)
+    if (statutSeuil === 'ROUGE') {
+      await db.notifications.add({
+        id: `notif-qc-${Date.now()}`,
+        type: 'production',
+        title: `🚨 Alerte Contrôle Qualité : Rebut ${tauxRebut}% (${newQC.typeDefaut})`,
+        message: `Contrôle qualité ${record.numeroControle} : ${newQC.quantiteRejetee} pièces rejetées sur ${newQC.quantiteControlee}. Action : ${newQC.actionCorrective}.`,
+        date: new Date().toISOString(),
+        isRead: false
+      });
+    }
+
     setShowQCModal(false);
   };
 
@@ -521,6 +670,19 @@ export const ProductiviteModule: React.FC = () => {
     };
 
     await db.machineIncidents.add(record);
+
+    // Alerte automatique si arrêt machine prolongé (≥ 1.5h)
+    if (heures >= (factorySettings?.seuilAlerteArretMachineProlongeHeures ?? 1.5)) {
+      await db.notifications.add({
+        id: `notif-inc-${Date.now()}`,
+        type: 'production',
+        title: `🛑 Alerte Arrêt Machine Prolongé : ${newIncident.equipementConcerne} (${heures}h)`,
+        message: `Arrêt imprévu de ${minutes} min (${heures}h) déclaré sur ${newIncident.equipementConcerne}. Cause : ${newIncident.causeIdentifiee}. Impact : -${newIncident.impactProductionAlveoles} alvéoles.`,
+        date: new Date().toISOString(),
+        isRead: false
+      });
+    }
+
     setShowIncidentModal(false);
   };
 
@@ -583,6 +745,11 @@ export const ProductiviteModule: React.FC = () => {
     const realisationCible = Math.min(150, Math.round((prodReelle / (prodCible || 1)) * 100));
     const ecartProduction = prodReelle - prodCible;
 
+    // Calculs TRS / OEE global (Disponibilité x Performance x Qualité)
+    const performance = CADENCE_REELLE_CIBLE > 0 ? Number(((cadenceReelle / CADENCE_REELLE_CIBLE) * 100).toFixed(1)) : 100;
+    const qualite = prodTotale > 0 ? Number(((prodReelle / prodTotale) * 100).toFixed(1)) : 100;
+    const trs = Number(((disponibilite * performance * qualite) / 10000).toFixed(1));
+
     return {
       prodReelle,
       prodTotale,
@@ -593,6 +760,9 @@ export const ProductiviteModule: React.FC = () => {
       tauxRebut,
       rendementMatiere,
       disponibilite,
+      performance,
+      qualite,
+      trs,
       prodCible,
       realisationCible,
       ecartProduction
@@ -790,8 +960,19 @@ export const ProductiviteModule: React.FC = () => {
               </select>
             </div>
 
-            <div className="text-xs text-slate-500 font-semibold">
-              {filteredShifts.length} fiche(s) de production enregistrée(s)
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={exportShiftsToCsv}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-colors shadow-xs"
+                title="Exporter tous les relevés de production en format CSV / Excel"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-600" />
+                <span>Export CSV</span>
+              </button>
+              <div className="text-xs text-slate-500 font-semibold">
+                {filteredShifts.length} fiche(s) de production
+              </div>
             </div>
           </div>
 
@@ -877,21 +1058,31 @@ export const ProductiviteModule: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right">
-                            {statut !== 'VALIDE' ? (
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() => handleValidateExistingShift(s)}
-                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all"
+                                type="button"
+                                onClick={() => exportFicheJournalierePdf(s, currentTheme.hex)}
+                                title="Imprimer / Exporter Fiche Journalière PDF"
+                                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-colors shadow-xs"
                               >
-                                Valider →
+                                <Printer className="w-3.5 h-3.5 text-slate-600" />
                               </button>
-                            ) : (
-                              <button
-                                onClick={() => setViewingShift(s)}
-                                className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-                              >
-                                Consulter
-                              </button>
-                            )}
+                              {statut !== 'VALIDE' ? (
+                                <button
+                                  onClick={() => handleValidateExistingShift(s)}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all"
+                                >
+                                  Valider →
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setViewingShift(s)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                                >
+                                  Consulter
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1425,6 +1616,96 @@ export const ProductiviteModule: React.FC = () => {
               <p className="text-[11px] text-slate-500 mt-1">Formule : Production réelle − production cible ({kpiData.prodReelle.toLocaleString()} vs {kpiData.prodCible.toLocaleString()})</p>
             </div>
           </div>
+
+          {/* Section Visuelle TRS / OEE (Disponibilité × Performance × Qualité) */}
+          <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 font-black">
+                  <Award className="w-5 h-5" />
+                </span>
+                <div>
+                  <h4 className="text-base font-black tracking-tight">
+                    Taux de Rendement Synthétique (TRS / OEE) • Ligne Shuliy
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Modèle d'atelier : 1 Seul Shift (8h • Pause 1h = 7h nettes machine) · Du Lundi au Samedi (6j/7)
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-bold">Standard International :</span>
+                <span className="px-3 py-1 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 text-xs font-black">
+                  World Class OEE ≥ 85.0%
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
+              {/* Pilier 1 : Disponibilité */}
+              <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 flex flex-col justify-between">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">1. Disponibilité Machine</div>
+                  <div className="text-2xl font-black text-white mt-1">{kpiData.disponibilite}%</div>
+                  <p className="text-[10px] text-slate-400 mt-1">Temps effectif net sur temps planifié (7h)</p>
+                </div>
+                <div className="w-full bg-slate-700 h-2 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className="bg-blue-500 h-full rounded-full transition-all" 
+                    style={{ width: `${Math.min(100, kpiData.disponibilite)}%` }} 
+                  />
+                </div>
+              </div>
+
+              {/* Pilier 2 : Performance */}
+              <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 flex flex-col justify-between">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">2. Taux de Performance</div>
+                  <div className="text-2xl font-black text-white mt-1">{kpiData.performance}%</div>
+                  <p className="text-[10px] text-slate-400 mt-1">Cadence réelle vs Cible usine (1 700 alv/h)</p>
+                </div>
+                <div className="w-full bg-slate-700 h-2 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className="bg-indigo-500 h-full rounded-full transition-all" 
+                    style={{ width: `${Math.min(100, kpiData.performance)}%` }} 
+                  />
+                </div>
+              </div>
+
+              {/* Pilier 3 : Qualité */}
+              <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 flex flex-col justify-between">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">3. Taux de Qualité</div>
+                  <div className="text-2xl font-black text-white mt-1">{kpiData.qualite}%</div>
+                  <p className="text-[10px] text-slate-400 mt-1">Alvéoles conformes / Total produit</p>
+                </div>
+                <div className="w-full bg-slate-700 h-2 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className="bg-emerald-500 h-full rounded-full transition-all" 
+                    style={{ width: `${Math.min(100, kpiData.qualite)}%` }} 
+                  />
+                </div>
+              </div>
+
+              {/* TRS Synthétique Global */}
+              <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-4 rounded-2xl border border-indigo-700 flex flex-col justify-between shadow-lg">
+                <div>
+                  <div className="text-[11px] font-black text-amber-400 uppercase tracking-wider">TRS / OEE GLOBAL</div>
+                  <div className="text-3xl font-black text-white mt-1">{kpiData.trs}%</div>
+                  <p className="text-[10px] text-indigo-200 mt-1">Dispo × Perf × Qualité ÷ 10 000</p>
+                </div>
+                <div className="mt-3">
+                  <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${
+                    kpiData.trs >= 85 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                    kpiData.trs >= 70 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                    'bg-red-500/20 text-red-400 border border-red-500/40'
+                  }`}>
+                    {kpiData.trs >= 85 ? '⭐ World Class (≥85%)' : kpiData.trs >= 70 ? '✓ Conforme Standard' : '⚠️ Sous Surveillance'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1924,6 +2205,40 @@ export const ProductiviteModule: React.FC = () => {
                     <span className="text-[9px] text-indigo-600 font-medium">8h - 1h pause - {newShift.heuresArret}h</span>
                   </div>
                 </div>
+
+                {/* Rapatriement automatique des incidents/arrêts du jour */}
+                {incidentsDuJour.length > 0 && (
+                  <div className="mt-3 p-3 bg-amber-50/90 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs animate-fadeIn">
+                    <div className="flex items-center gap-2 text-amber-950 font-bold">
+                      <Wrench className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>{incidentsDuJour.length} arrêt(s) déclaré(s) le {newShift.date} ({totalHeuresArretDuJour}h d'arrêt cumulées)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleImportDayIncidents}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] shadow-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Rapatrier les arrêts</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Saisie ou précision du motif d'arrêt si arrêt > 0 */}
+                {newShift.heuresArret > 0 && (
+                  <div className="mt-3 animate-fadeIn">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Motif des arrêts machine (CDC 5.1 & 5.5)
+                    </label>
+                    <input
+                      type="text"
+                      value={newShift.motifArret}
+                      onChange={e => setNewShift({ ...newShift, motifArret: e.target.value })}
+                      placeholder="Ex: Nettoyage buses séchoir (30 min), Bourrage mouleuse (15 min)..."
+                      className="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white font-bold"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* 2. Quantités Produites & Règle de Cohérence 5.2 */}
@@ -2422,7 +2737,15 @@ export const ProductiviteModule: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md pt-3 pb-4 sm:pb-2 border-t border-slate-100 flex justify-end z-20 mt-auto">
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md pt-3 pb-4 sm:pb-2 border-t border-slate-100 flex items-center justify-between gap-2 z-20 mt-auto">
+              <button
+                type="button"
+                onClick={() => exportFicheJournalierePdf(viewingShift, currentTheme.hex)}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Imprimer Fiche Officielle (PDF)</span>
+              </button>
               <button
                 onClick={() => setViewingShift(null)}
                 className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs"
